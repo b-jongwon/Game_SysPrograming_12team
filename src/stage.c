@@ -131,6 +131,6 @@ int load_stage(Stage *stage, int stage_id) {
     // 파일 닫기
     fclose(fp);
 
-    // 정상 종료
+    // 정상 종료    git 테스트
     return 0;
 }

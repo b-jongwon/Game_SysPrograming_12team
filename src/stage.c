@@ -65,7 +65,7 @@ int load_stage(Stage *stage, int stage_id) {
     //    예: stage_id=1 → "assets/stage1.map"
     // ----------------------------------------------------------
     char filename[64];
-    snprintf(filename, sizeof(filename), "assets/it5_%dc.map", stage_id);
+    snprintf(filename, sizeof(filename), "assets/scaled_it5_%df.map", stage_id);
       // main 에서 stage_id는 계속 갱신
 
 
@@ -79,7 +79,7 @@ int load_stage(Stage *stage, int stage_id) {
     }
 
 
-    char line[256];   // 한 줄을 임시로 저장하는 버퍼
+    char line[1024];   // 한 줄을 임시로 저장하는 버퍼
     int  y = 0;        // 현재 맵의 y 위치
     int  max_width = 0; // 가장 긴 줄의 길이를 저장
 
@@ -92,10 +92,10 @@ int load_stage(Stage *stage, int stage_id) {
         int len = (int)strlen(line);
 
         // 줄 끝의 개행문자 제거
-        if (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r')) {
+        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r')) {
             line[--len] = '\0';
         }
-
+        
         // 가장 긴 줄 길이 추적
         if (len > max_width) {
             max_width = len;

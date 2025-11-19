@@ -5,7 +5,7 @@ LDFLAGS = -lncurses
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 
-TARGET = bin/game
+TARGET = game
 
 all: $(TARGET)
 

@@ -10,12 +10,12 @@
 // 게임 맵의 가로 길이(열 수). 
 // - Stage.map에서 한 줄에 들어가는 문자 개수와 동일해야 함.
 // - 렌더링, 충돌 판정, 스테이지 파일 파싱 등에서 공통 기준으로 사용.
-#define MAX_X 60
+#define MAX_X 255
 
 // 게임 맵의 세로 길이(행 수).
 // - Stage.map에서 전체 줄의 개수와 동일.
 // - 터미널 화면에서 y 좌표 범위, 플레이어 이동, 장애물 이동, 맵 출력에 사용.
-#define MAX_Y 20
+#define MAX_Y 100
 
 // 한 스테이지에서 허용하는 최대 장애물 개수.
 // - Stage.obstacles 배열의 크기.
@@ -48,25 +48,19 @@ typedef struct {
 // - 사실상 "게임 한 판"에 대한 모든 환경 정보를 가지고 있음.
 typedef struct {
     int id;                              // 스테이지 ID 번호 (1, 2, 3 ... 이런 식으로 구분)
-    char name[32];                       // 스테이지 이름 (UI에 표시 가능)
-    char map[MAX_Y][MAX_X + 1];          // 실제 맵 데이터.
-//  - 각 행은 '\0'을 포함해 MAX_X + 1 크기.
-//  - 맵 파일에서 읽어온 문자들을 저장하고, 렌더링 시 이 배열을 그대로 출력.
-//  - 벽, 빈 공간, 장애물 배치 등을 문자로 표현 가능.
+    char name[32];                       // 스테이지 이름
 
-    int start_x, start_y;                // 플레이어 시작 위치.
-//  - 스테이지 로드 시 플레이어를 이 좌표로 초기화.
+    char map[MAX_Y][MAX_X + 1];          // 실제 맵 데이터 (최대 크기)
 
-    int goal_x, goal_y;                  // 목표 지점(골)의 위치.
-//  - 플레이어가 이 위치에 도달하면 스테이지 클리어로 간주.
+    int start_x, start_y;                // 시작 위치
+    int goal_x, goal_y;                  // 목표 위치
 
-    int num_obstacles;                   // 실제로 사용 중인 장애물 개수.
-//  - obstacles 배열 중 의미 있는 요소 개수.
-//  - 장애물 이동 루프에서 0 ~ num_obstacles-1 인덱스만 순회.
+    int num_obstacles;                   // 장애물 개수
+    Obstacle obstacles[MAX_OBSTACLES];   // 장애물 배열
 
-    Obstacle obstacles[MAX_OBSTACLES];   // 장애물 배열.
-//  - 각 요소가 맵 상의 움직이는 장애물 하나를 의미.
-//  - obstacle 스레드 또는 move_obstacles 함수에서 이 배열을 iterate하면서 움직임 처리.
+    // 🔥 새로 추가
+    int width;                           // 실제 사용 중인 맵 가로 길이
+    int height;                          // 실제 사용 중인 맵 세로 길이
 } Stage;
 
 #endif // GAME_H

@@ -2,193 +2,228 @@
 #include <stdlib.h>     // exit, atexit 등
 #include <unistd.h>     // usleep, sleep 등
 #include <sys/time.h>   // struct timeval, gettimeofday
+#include <ncurses.h>    // 화면 제어용 ncurses 라이브러리
 
 // 게임 내부 도메인/모듈 헤더들
-#include "game.h"           // Player, Stage, Obstacle 구조체 및 상수들
+#include "../include/game.h"// "/home/baek/TestGameCPtest/include/game.h"     // Player, Stage 구조체 정의
 #include "stage.h"          // load_stage
 #include "player.h"         // init_player, move_player
-#include "obstacle.h"       // start_obstacle_thread, stop_obstacle_thread, move_obstacles, g_stage_mutex
-#include "render.h"         // render 함수
-#include "timer.h"          // get_elapsed_time
-#include "fileio.h"         // load_best_record, update_record_if_better
-#include "input.h"          // init_input, restore_input, poll_input
-#include "signal_handler.h" // g_running, setup_signal_handlers
+#include "obstacle.h"       // 장애물 스레드 및 이동 처리
+#include "render.h"         // ncurses 기반 렌더링
+#include "timer.h"          // 시간 처리 유틸
+#include "fileio.h"         // 기록 저장/불러오기
+#include "input.h"          // 키 입력 처리(논블로킹)
+#include "signal_handler.h" // 안전 종료 위한 시그널 핸들러
 
-// goal/충돌 체크 함수는 다른 C파일에 구현되어 있고 여기서만 extern으로 선언해 사용
+// 외부 파일에서 정의된 함수들
 extern int is_goal_reached(const Stage *stage, const Player *player);
 extern int check_collision(const Stage *stage, const Player *player);
 
-// 전체 스테이지 개수 (현재 3개)
-#define NUM_STAGES 3
+// 스테이지 개수
+#define NUM_STAGES 5
 
 
-// ----------------------------------------------------------
-// main()
-// ----------------------------------------------------------
-// 게임의 진입점. 전체 흐름:
-//
-// 1. 시그널 핸들러 / 입력 모드 초기화
-// 2. 전체 플레이 시간 측정 시작(global_start)
-// 3. 각 스테이지(1 ~ NUM_STAGES)에 대해:
-//      - 스테이지 로드
-//      - 플레이어 초기화
-//      - 장애물 스레드 시작
-//      - 스테이지 루프:
-//          * 시간 계산
-//          * 화면 렌더링
-//          * 충돌/골 도달 체크
-//          * 입력 받아 플레이어 이동
-//      - 스레드 종료
-//      - 클리어/실패/종료 상황 처리
-// 4. 전체 플레이 시간 출력
-// 5. 모든 스테이지 클리어 시 기록 갱신
 int main(void) {
 
-    // Ctrl+C, SIGTERM 등 시그널이 왔을 때 g_running = 0으로 설정하도록 등록
+    // ============================================================
+    // 0. ncurses 시스템 초기화
+    // ============================================================
+    // ncurses는 '화면 전체를 가상 버퍼에 그려두었다가 refresh() 시점에 한번에 출력'하는 구조.
+    // 따라서 render()에서 mvprintw/mvaddch를 정상 사용하려면
+    // 여기에서 반드시 initscr()가 먼저 호출되어야 한다.
+    initscr();              // 터미널을 ncurses 모드로 전환
+    noecho();               // 키 입력 시 실제 문자 화면에 표시 안 함
+    cbreak();               // 줄 버퍼링 해제 → 입력 즉시 처리
+    curs_set(0);            // 커서 숨김 (게임 화면 깜빡임 방지)
+    nodelay(stdscr, TRUE);  // getch()를 논블로킹 모드로 설정
+
+
+    // ============================================================
+    // 1. 시그널 핸들러/입력 초기화
+    // ============================================================
+    // Ctrl+C 같은 시그널을 받으면 g_running = 0 으로 바꿔
+    // 모든 루프를 안전하게 종료시키도록 설정
     setup_signal_handlers();
 
-    // 터미널 입력 모드 초기화 (non-blocking, no-echo 등)
+    // noncanonical 터미널 입력 설정
+    //  - 즉시 입력 처리 (엔터 없이)
+    //  - echo 방지
+    //  - non-blocking
     init_input();
 
-    // 프로그램 정상 종료 시 restore_input() 자동 호출되도록 등록
+    // 프로그램이 정상 종료될 때 터미널을 원상복구하도록 등록
     atexit(restore_input);
 
-    // 전체 게임 시작 시간 기록
+
+    // ============================================================
+    // 2. 전체 플레이 시간 측정 시작
+    // ============================================================
     struct timeval global_start, global_end;
     gettimeofday(&global_start, NULL);
 
-    // 모든 스테이지를 다 깼는지 여부 (초기값: 깰 예정)
-    int cleared_all = 1;
+    int cleared_all = 1;   // 모든 스테이지 클리어 여부
 
-    // 스테이지 루프: 1번부터 NUM_STAGES까지
-    // g_running이 0이 되면(시그널/종료 요청) 즉시 루프 탈출
+
+    // ============================================================
+    // 3. 스테이지 루프 (1~NUM_STAGES)
+    // ============================================================
     for (int s = 1; s <= NUM_STAGES && g_running; s++) {
 
-        Stage stage;   // 현재 스테이지 정보 저장할 구조체
+        Stage stage;
 
-        // 스테이지 로드 (파일에서 맵, 장애물, 시작/골 위치 등 읽기)
+        // -------------------------------
+        // 스테이지 파일 로드 (.map 파싱)
+        // -------------------------------
         if (load_stage(&stage, s) != 0) {
             fprintf(stderr, "Failed to load stage %d\n", s);
-            exit(1);   // 치명적인 에러로 간주하고 프로그램 종료
-        }
-
-        // 플레이어 상태 구조체
-        Player player;
-
-        // 플레이어를 현재 스테이지의 시작 위치로 초기화
-        init_player(&player, &stage);
-
-        // 장애물 움직이는 스레드 시작
-        if (start_obstacle_thread(&stage) != 0) {
-            fprintf(stderr, "Failed to start obstacle thread\n");
+            endwin();      // ncurses 모드 해제
             exit(1);
         }
 
-        // 이 스테이지에서의 시간 측정을 위한 시작 시각
+        // -------------------------------
+        // 플레이어 시작 위치 초기화
+        // -------------------------------
+        Player player;
+        init_player(&player, &stage);
+
+        // -------------------------------
+        // 장애물 스레드 시작
+        //   → stage->obstacles[] 를 계속 움직임
+        //   → 메인 루프와 충돌하지 않게 mutex 필요
+        // -------------------------------
+        if (start_obstacle_thread(&stage) != 0) {
+            fprintf(stderr, "Failed to start obstacle thread\n");
+            endwin();
+            exit(1);
+        }
+
+
+        // ============================================================
+        // 4. 스테이지 내부 게임 루프
+        // ============================================================
         struct timeval stage_start, now;
         gettimeofday(&stage_start, NULL);
 
-        // 현재 스테이지가 클리어되었는지, 실패했는지 플래그
         int stage_cleared = 0;
         int stage_failed = 0;
 
-        // 한 스테이지 내의 메인 루프
         while (g_running) {
 
-            // 현재 시각을 얻고 스테이지 시작 시각과의 차이로 경과 시간 계산
+            // -------------------------------
+            // 시간 업데이트
+            // -------------------------------
             gettimeofday(&now, NULL);
             double elapsed = get_elapsed_time(stage_start, now);
 
-            // ----- 렌더링 -----
-            // 스테이지/플레이어/장애물 정보를 그리는 동안
-            // 장애물 스레드와 데이터 충돌이 나지 않도록 mutex로 보호
+            // =======================================================
+            // 렌더링
+            // =======================================================
+            // 장애물 스레드와 동시에 Stage.map을 읽기 때문에
+            // mutex로 보호해야 Race Condition 방지됨.
             pthread_mutex_lock(&g_stage_mutex);
 
-            // 터미널 화면 지우기 (리눅스 쉘 기준)
-            system("clear");
+            // system("clear") 사용 금지!
+            // → ncurses clear()는 render() 안에서 이미 호출됨.
+            // → 여기서 system("clear") 사용하면 화면이 사라짐.
 
-            // 현재 상태를 화면에 출력
             render(&stage, &player, elapsed, s, NUM_STAGES);
 
             pthread_mutex_unlock(&g_stage_mutex);
-            // ----- 렌더링 끝 -----
 
-            // ----- 충돌 및 골 체크 -----
+
+            // =======================================================
+            // 충돌 체크 (플레이어 ↔ 장애물)
+            // =======================================================
             pthread_mutex_lock(&g_stage_mutex);
-
-            // 플레이어와 장애물 충돌 여부 확인
             if (check_collision(&stage, &player)) {
-                stage_failed = 1;                 // 이 스테이지 실패
+                stage_failed = 1;
                 pthread_mutex_unlock(&g_stage_mutex);
-                break;                            // 스테이지 루프 탈출
+                break; // 스테이지 실패 → 루프 종료
             }
 
-            // 플레이어가 골 위치에 도달했는지 확인
             if (is_goal_reached(&stage, &player)) {
-                stage_cleared = 1;                // 이 스테이지 클리어
+                stage_cleared = 1;
                 pthread_mutex_unlock(&g_stage_mutex);
-                break;                            // 스테이지 루프 탈출
+                break; // 골 도달 → 루프 종료
             }
-
             pthread_mutex_unlock(&g_stage_mutex);
-            // ----- 체크 끝 -----
 
-            // ----- 입력 처리 -----
-            int key = poll_input();   // 현재 눌린 키가 있으면 읽어온다. 없으면 -1.
+
+            // =======================================================
+            // 입력 처리
+            // =======================================================
+            int key = poll_input(); // 없으면 -1
 
             if (key != -1) {
-                // q 또는 Q를 누르면 게임 전체 종료 요청
                 if (key == 'q' || key == 'Q') {
-                    g_running = 0;   // 전역 플래그를 꺼서 바깥 루프들까지 멈추게 함
+                    // 전체 게임 종료 요청
+                    g_running = 0;
                     break;
                 } else {
-                    // W/A/S/D 등 이동 키 처리
-                    // 이때도 stage/플레이어 상태를 건드리므로 mutex로 보호
+                    // WASD 이동키 처리
                     pthread_mutex_lock(&g_stage_mutex);
                     move_player(&player, (char)key, &stage);
                     pthread_mutex_unlock(&g_stage_mutex);
                 }
             }
-            // ----- 입력 처리 끝 -----
 
-            // 너무 빠르게 루프를 돌지 않도록 10ms 쉰다.
-            usleep(10000);
+            // 루프 속도 너무 빠르면 CPU 100% 먹으므로 텀 둠
+            usleep(10000); // 10ms
         }
 
-        // 이 스테이지에서 사용하던 장애물 스레드 중지(합류)
+
+        // ============================================================
+        // 5. 장애물 스레드 종료
+        // ============================================================
         stop_obstacle_thread();
 
-        // g_running이 0이면(시그널/종료 키) 게임 전체 중단
+        // ============================================================
+        // 6. 스테이지 결과 처리
+        // ============================================================
         if (!g_running) {
-            cleared_all = 0;    // 모든 스테이지 클리어는 아님
-            break;
-        }
-        // 스테이지 실패(장애물에 잡힘)
-        else if (stage_failed) {
-            printf("\nYou were caught at Stage %d! Game Over.\n", s);
             cleared_all = 0;
             break;
         }
-        // 스테이지 클리어 성공
-        else if (stage_cleared) {
-            printf("\nStage %d Cleared!\n", s);
-            sleep(1);  // 잠깐 쉬었다 다음 스테이지로
+
+        if (stage_failed) {
+            mvprintw(stage.height + 4, 0,
+                "You were caught at Stage %d! Game Over.\n", s);
+            refresh();
+            cleared_all = 0;
+            break;
+        }
+
+        if (stage_cleared) {
+            mvprintw(stage.height + 4, 0, "Stage %d Cleared!\n", s);
+            refresh();
+            sleep(1);
         }
     }
 
-    // 전체 게임 종료 시간 기록 후, 총 플레이 시간 계산
+
+    // ============================================================
+    // 7. 전체 결과 출력
+    // ============================================================
     gettimeofday(&global_end, NULL);
     double total_time = get_elapsed_time(global_start, global_end);
 
-    printf("\nTotal Playtime: %.3fs\n", total_time);
+    mvprintw(3, 0, "Total Playtime: %.3fs\n", total_time);
 
-    // 모든 스테이지를 다 깼고, 도중에 강제 종료도 안 된 경우만 기록 갱신
     if (cleared_all && g_running) {
-        printf("You cleared all stages!\n");
+        mvprintw(4, 0, "You cleared all stages!\n");
         update_record_if_better(total_time);
     } else {
-        printf("Record is updated only when all stages are cleared.\n");
+        mvprintw(4, 0,
+            "Record is updated only when all stages are cleared.\n");
     }
+    refresh();
+
+
+    // ============================================================
+    // 8. ncurses 종료
+    // ============================================================
+    // (이걸 호출해야 터미널이 원래 모드로 돌아감)
+    endwin();
 
     return 0;
 }

@@ -1,13 +1,17 @@
 CC = gcc
-CFLAGS = -Wall -Iinclude -pthread
+CFLAGS = -Wall -I./include -I/usr/include -pthread
+LDFLAGS = -lncurses
+
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
-TARGET = game
+
+TARGET = bin/game
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
+	@mkdir -p bin
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(OBJ) $(TARGET)

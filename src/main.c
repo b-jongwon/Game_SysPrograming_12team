@@ -55,6 +55,8 @@ int main(void) {
     // ============================================================
     struct timeval global_start, global_end;
     gettimeofday(&global_start, NULL);
+    int prev_h, prev_w;
+    getmaxyx(stdscr, prev_h, prev_w);
 
     int cleared_all = 1;   // 모든 스테이지 클리어 여부
 
@@ -103,7 +105,16 @@ int main(void) {
         int stage_failed = 0;
 
         while (g_running) {
-
+ // 터미널 리사이즈 감지 처리
+    int new_h, new_w;
+    getmaxyx(stdscr, new_h, new_w);
+    if (new_h != prev_h || new_w != prev_w) {
+        endwin();
+        refresh();
+        clear();
+        prev_h = new_h;
+        prev_w = new_w;
+    }
             // -------------------------------
             // 시간 업데이트
             // -------------------------------

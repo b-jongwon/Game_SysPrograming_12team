@@ -9,7 +9,7 @@
 #ifndef STAGE_H
 #define STAGE_H
 
-#include "game.h"   // Stage 구조체 정의 사용
+#include "../include/game.h"   // Stage 구조체 정의 사용
 
 // 특정 스테이지 ID에 해당하는 스테이지를 로드하는 함수.
 // - 인자 stage: 로드 결과를 저장할 Stage 구조체 포인터.

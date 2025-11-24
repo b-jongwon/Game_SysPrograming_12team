@@ -8,7 +8,7 @@
 #define OBSTACLE_H
 
 #include <pthread.h>    // pthread_t, pthread_mutex_t 등 POSIX 스레드 관련 타입 사용
-#include "game.h"       // Stage, Obstacle 구조체 정의를 사용하기 위해 include
+#include "../include/game.h"       // Stage, Obstacle 구조체 정의를 사용하기 위해 include
 
 // 전역으로 선언된 뮤텍스(mutex).
 // - g_stage_mutex는 Stage 구조체에 대한 동시 접근을 보호하기 위해 사용.

@@ -4,19 +4,20 @@
 #include <sys/time.h>
 
 #include "../include/game.h"
-#include "stage.h"
-#include "player.h"
-#include "obstacle.h"
-#include "render.h"
-#include "timer.h"
-#include "fileio.h"
-#include "input.h"
-#include "signal_handler.h"
+#include "../include/stage.h"
+#include "../include/player.h"
+#include "../include/obstacle.h"
+#include "../include/render.h"
+#include "../include/timer.h"
+#include "../include/fileio.h"
+#include "../include/input.h"
+#include "../include/signal_handler.h"
+#include "../include/projectile.h"
 
-extern int is_goal_reached(const Stage *stage, const Player *player);
-extern int check_collision(const Stage *stage, const Player *player);
+extern int is_goal_reached(const Stage *stage,  const Player *player);
+extern int check_collision(Stage *stage,  Player *player);
 
-#define NUM_STAGES 5
+#define NUM_STAGES 6
 
 int main(void)
 {
@@ -77,7 +78,8 @@ int main(void)
             pthread_mutex_unlock(&g_stage_mutex);
 
             pthread_mutex_lock(&g_stage_mutex);
-            if (check_collision(&stage, &player))
+
+            if (check_collision(&stage, &player))  // 충돌 체크
             {
                 stage_failed = 1;
                 pthread_mutex_unlock(&g_stage_mutex);
@@ -101,12 +103,20 @@ int main(void)
                     g_running = 0;
                     break;
                 }
-                else
+                // --- 🔥 투사체 발사 ---
+                if (key == 'k' || key == 'K')
                 {
+                    pthread_mutex_lock(&g_stage_mutex);
+                    fire_projectile(&stage, &player);
+                    pthread_mutex_unlock(&g_stage_mutex);
+                    continue; // 이동 처리와 겹치지 않게 skip
+                }
+
+                
                     pthread_mutex_lock(&g_stage_mutex);
                     move_player(&player, (char)key, &stage, elapsed);
                     pthread_mutex_unlock(&g_stage_mutex);
-                }
+                
             }
             else
             {
@@ -114,6 +124,26 @@ int main(void)
                 update_player_idle(&player, elapsed);
                 pthread_mutex_unlock(&g_stage_mutex);
             }
+            
+            // ===== 아이템 획득 체크 =====
+            pthread_mutex_lock(&g_stage_mutex);
+            for (int i = 0; i < stage.num_items; i++)
+            {
+                Item *it = &stage.items[i];
+                if (it->active &&
+                    it->x == player.x &&
+                    it->y == player.y)
+                {
+                    it->active = 0;        // 아이템 비활성화 (맵에서 사라짐)
+                    player.shield_count++; // 보호막 1개 획득
+                    printf("Shield acquired! (x%d)\n", player.shield_count);
+                }
+            }
+            pthread_mutex_unlock(&g_stage_mutex);
+
+            pthread_mutex_lock(&g_stage_mutex);
+            move_projectiles(&stage);
+            pthread_mutex_unlock(&g_stage_mutex);
 
             usleep(10000);
         }

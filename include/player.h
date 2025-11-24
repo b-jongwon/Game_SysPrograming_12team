@@ -8,8 +8,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "game.h"   // Player, Stage 구조체 정의 사용
-#include "stage.h"  // stage 관련 로드 함수와 Stage 타입 사용 (중복 include 보호는 stage.h 쪽에서 처리)
+#include "../include/game.h"   // Player, Stage 구조체 정의 사용
+#include "../include/stage.h"  // stage 관련 로드 함수와 Stage 타입 사용 (중복 include 보호는 stage.h 쪽에서 처리)
 
 // 플레이어를 특정 스테이지의 시작 위치로 초기화하는 함수.
 // - 인자 p: 초기화할 Player 구조체 포인터.

@@ -1,6 +1,6 @@
 #include <signal.h>
 #include <stddef.h>
-#include "signal_handler.h"
+#include "../include/signal_handler.h"
 
 
 // 게임 실행 여부를 나타내는 전역 플래그.

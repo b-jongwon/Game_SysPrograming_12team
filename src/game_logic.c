@@ -1,4 +1,6 @@
-#include "game.h"   
+#include <stdio.h>
+#include "../include/game.h"
+#include "../include/player.h"   
 // game.h에는 Stage, Player 구조체 정의가 들어있다.
 // 이 파일은 Stage와 Player의 좌표를 비교하는 기능만 필요하므로 
 // game.h만 include하면 충분하다.
@@ -47,19 +49,27 @@ int is_goal_reached(const Stage *stage, const Player *player) {
  *   - 멀티스레드 환경에서 stage->obstacles 접근 시 mutex가 있어야 한다.
  *     (실제 메인에서 mutex lock 후 호출함)
  */
-int check_collision(const Stage *stage, const Player *player) {
+int check_collision(Stage *stage, Player *player) {
 
-    // 모든 장애물을 순회하며 플레이어 위치와 비교
-    for (int i = 0; i < stage->num_obstacles; i++) {
-        
-        const Obstacle *o = &stage->obstacles[i];   // i번째 장애물 참조
+     for (int i = 0; i < stage->num_obstacles; i++)
+    {
+        Obstacle *o = &stage->obstacles[i];
+        if (!o->active) continue;
 
-        // x, y 좌표가 동일하면 충돌
-        if (o->x == player->x && 
-            o->y == player->y) {
-            return 1;   // 충돌
+        if (o->x == player->x && o->y == player->y)
+        {
+            // 보호막이 있으면 충돌 무효화
+            if (player->shield_count > 0)
+            {
+                player->shield_count--;
+                o->active = 0;   // 장애물 제거
+                printf("Shield used! Remaining: %d\n", player->shield_count);
+                return 0;        // 죽지 않음
+            }
+
+            // 보호막 없으면 진짜 충돌 → 죽음
+            return 1;
         }
     }
-
-    return 0;   // 충돌 없음
+    return 0;
 }

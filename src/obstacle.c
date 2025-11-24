@@ -1,9 +1,9 @@
 #include <pthread.h>    // pthread_t, pthread_create, pthread_join, pthread_mutex_t 등
 #include <unistd.h>     // usleep
 
-#include "obstacle.h"       // move_obstacles, start/stop 함수 선언 및 g_stage_mutex extern
-#include "game.h"           // Stage, Obstacle, MAX_X, MAX_Y 등
-#include "signal_handler.h" // g_running 전역 플래그
+#include "../include/obstacle.h"       // move_obstacles, start/stop 함수 선언 및 g_stage_mutex extern
+#include "../include/game.h"           // Stage, Obstacle, MAX_X, MAX_Y 등
+#include "../include/signal_handler.h" // g_running 전역 플래그
 
 
 // 전역 뮤텍스 정의.

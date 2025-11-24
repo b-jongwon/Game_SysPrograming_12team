@@ -1,4 +1,4 @@
-#include "timer.h"   // struct timeval, 함수 선언 포함
+#include "../include/timer.h"   // struct timeval, 함수 선언 포함
 
 
 // ----------------------------------------------------------

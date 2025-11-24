@@ -11,17 +11,19 @@
 #include <math.h>
 
 #include "../include/game.h"
-#include "render.h"
+#include "../include/render.h"
 
 #define TILE_SIZE 32
 
-typedef enum {
+typedef enum
+{
     PLAYER_VARIANT_NORMAL = 0,
     PLAYER_VARIANT_BACKPACK,
     PLAYER_VARIANT_COUNT
 } PlayerVariant;
 
-typedef enum {
+typedef enum
+{
     PLAYER_FRAME_STAND_A = 0,
     PLAYER_FRAME_STAND_B,
     PLAYER_FRAME_STEP_A,
@@ -29,7 +31,8 @@ typedef enum {
     PLAYER_FRAME_COUNT
 } PlayerFrame;
 
-typedef struct {
+typedef struct
+{
     const char *stand_a;
     const char *stand_b;
     const char *step_a;
@@ -42,54 +45,11 @@ static const PlayerTextureSet PLAYER_TEXTURE_PATHS[PLAYER_VARIANT_COUNT][PLAYER_
             "assets/image/player/foward_stand.png",
             "assets/image/player/foward_stand.png",
             "assets/image/player/foward_left.PNG",
-            "assets/image/player/foward_right.png"
-        },
-        [PLAYER_FACING_UP] = {
-            "assets/image/player/back_stand_1.PNG",
-            "assets/image/player/back_stand_2.png",
-            "assets/image/player/back_left.PNG",
-            "assets/image/player/back_right.PNG"
-        },
-        [PLAYER_FACING_LEFT] = {
-            "assets/image/player/left_stand.PNG",
-            "assets/image/player/left_stand.PNG",
-            "assets/image/player/left_left.png",
-            "assets/image/player/left_right.png"
-        },
-        [PLAYER_FACING_RIGHT] = {
-            "assets/image/player/right_stand.png",
-            "assets/image/player/right_stand.png",
-            "assets/image/player/right_left.PNG",
-            "assets/image/player/right_right.PNG"
-        }
-    },
-    [PLAYER_VARIANT_BACKPACK] = {
-        [PLAYER_FACING_DOWN] = {
-            "assets/image/player_backpack/foward_stand.png",
-            "assets/image/player_backpack/foward_stand.png",
-            "assets/image/player_backpack/foward_left.png",
-            "assets/image/player_backpack/foward_right.png"
-        },
-        [PLAYER_FACING_UP] = {
-            "assets/image/player_backpack/back_stand_1.png",
-            "assets/image/player_backpack/back_stand_2.png",
-            "assets/image/player_backpack/back_left.png",
-            "assets/image/player_backpack/back_right.png"
-        },
-        [PLAYER_FACING_LEFT] = {
-            "assets/image/player_backpack/left_stand.PNG",
-            "assets/image/player_backpack/left_stand.PNG",
-            "assets/image/player_backpack/left_left.png",
-            "assets/image/player_backpack/left_right.png"
-        },
-        [PLAYER_FACING_RIGHT] = {
-            "assets/image/player_backpack/right_stand.png",
-            "assets/image/player_backpack/right_stand.png",
-            "assets/image/player_backpack/right_left.png",
-            "assets/image/player_backpack/right_right.png"
-        }
-    }
-};
+            "assets/image/player/foward_right.png"},
+        [PLAYER_FACING_UP] = {"assets/image/player/back_stand_1.PNG", "assets/image/player/back_stand_2.png", "assets/image/player/back_left.PNG", "assets/image/player/back_right.PNG"},
+        [PLAYER_FACING_LEFT] = {"assets/image/player/left_stand.PNG", "assets/image/player/left_stand.PNG", "assets/image/player/left_left.png", "assets/image/player/left_right.png"},
+        [PLAYER_FACING_RIGHT] = {"assets/image/player/right_stand.png", "assets/image/player/right_stand.png", "assets/image/player/right_left.PNG", "assets/image/player/right_right.PNG"}},
+    [PLAYER_VARIANT_BACKPACK] = {[PLAYER_FACING_DOWN] = {"assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_left.png", "assets/image/player_backpack/foward_right.png"}, [PLAYER_FACING_UP] = {"assets/image/player_backpack/back_stand_1.png", "assets/image/player_backpack/back_stand_2.png", "assets/image/player_backpack/back_left.png", "assets/image/player_backpack/back_right.png"}, [PLAYER_FACING_LEFT] = {"assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_left.png", "assets/image/player_backpack/left_right.png"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_left.png", "assets/image/player_backpack/right_right.png"}}};
 
 static SDL_Window *g_window = NULL;
 static SDL_Renderer *g_renderer = NULL;
@@ -97,7 +57,10 @@ static SDL_Texture *g_tex_floor = NULL;
 static SDL_Texture *g_tex_wall = NULL;
 static SDL_Texture *g_tex_goal = NULL;
 static SDL_Texture *g_tex_professor = NULL;
+static SDL_Texture *g_tex_item_shield = NULL; // 아이템
+static SDL_Texture *g_tex_projectile = NULL;  // 투사체
 static SDL_Texture *g_tex_exit = NULL;
+
 static SDL_Texture *g_player_textures[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT][PLAYER_FRAME_COUNT] = {{{NULL}}};
 static int g_window_w = 0;
 static int g_window_h = 0;
@@ -183,6 +146,10 @@ int init_renderer(void)
     g_tex_goal = load_texture("assets/image/backpack64.png");
     g_tex_professor = load_texture("assets/image/professor64.png");
     g_tex_exit = load_texture("assets/image/exit.PNG");
+    g_tex_item_shield = load_texture("assets/image/professor64.png"); // 아이템 임시 렌더링
+    g_tex_projectile = load_texture("assets/image/professor64.png");  // 투사체 임시 렌더링
+    if (!g_tex_projectile)
+        return -1;
 
     if (!g_tex_floor || !g_tex_wall || !g_tex_goal || !g_tex_professor || !g_tex_exit)
     {
@@ -198,8 +165,7 @@ int init_renderer(void)
                 set->stand_a,
                 set->stand_b,
                 set->step_a,
-                set->step_b
-            };
+                set->step_b};
             for (int frame = 0; frame < PLAYER_FRAME_COUNT; frame++)
             {
                 g_player_textures[variant][facing][frame] = load_texture(paths[frame]);
@@ -221,6 +187,8 @@ void shutdown_renderer(void)
     destroy_texture(&g_tex_goal);
     destroy_texture(&g_tex_professor);
     destroy_texture(&g_tex_exit);
+    destroy_texture(&g_tex_item_shield); // 아이템 렌더링 셧다운
+    destroy_texture(&g_tex_projectile);  // 투사체 셧다운
 
     for (int variant = 0; variant < PLAYER_VARIANT_COUNT; variant++)
     {
@@ -317,9 +285,30 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
 
     for (int i = 0; i < stage->num_obstacles; i++)
     {
-        Obstacle o = stage->obstacles[i];
-        draw_texture(g_tex_professor, o.x, o.y);
+        const Obstacle *o = &stage->obstacles[i];
+        if (!o->active)
+            continue; // 비활성화 장애물은 건너뜀
+
+        draw_texture(g_tex_professor, o->x, o->y);
     }
+
+    for (int i = 0; i < stage->num_items; i++)
+    {
+        const Item *it = &stage->items[i];
+        if (it->active)
+        {
+            draw_texture(g_tex_item_shield, it->x, it->y);
+        }
+    } // 아이템 렌더링
+
+    for (int i = 0; i < stage->num_projectiles; i++)
+    {
+        const Projectile *p = &stage->projectiles[i];
+        if (p->active)
+        {
+            draw_texture(g_tex_projectile, p->x, p->y);
+        }
+    } // 투사체 렌더링
 
     PlayerFacing facing = player->facing;
     if (facing < 0 || facing >= PLAYER_FACING_COUNT)

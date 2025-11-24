@@ -16,14 +16,13 @@
 // 이 방식 덕분에 render()는 단순히 맵을 그린 뒤 장애물/플레이어만 덮어씌우면 된다.
 //
 
-#include <stdio.h>     // fopen, fgets, FILE, perror
-#include <string.h>    // memset, strlen, snprintf
+#include <stdio.h>  // fopen, fgets, FILE, perror
+#include <string.h> // memset, strlen, snprintf
 
 // ⚠️ 너가 절대 경로 include를 쓰는 이유는 아마 빌드 include 경로 문제 때문.
 //    지금은 일단 유지하되, 나중엔 -I 옵션으로 바꾸는 게 좋음.
 #include "../include/game.h"
-#include "stage.h"
-
+#include "../include/stage.h"
 
 // --------------------------------------------------------------
 // load_stage()
@@ -50,15 +49,15 @@
 //
 // 결론: Stage 구조체가 해당 스테이지의 모든 정보를 갖게 된다.
 //
-int load_stage(Stage *stage, int stage_id) {
+int load_stage(Stage *stage, int stage_id)
+{
 
     // ----------------------------------------------------------
     // 1) Stage 구조체 전체 초기화
     // ----------------------------------------------------------
-    memset(stage, 0, sizeof(Stage));  // memset쓰면 구조체 변수들 0으로 초기화 됩니다.
+    memset(stage, 0, sizeof(Stage)); // memset쓰면 구조체 변수들 0으로 초기화 됩니다.
 
     stage->id = stage_id; // stage id 인자로 받고 구조체에 저장.
-
 
     // ----------------------------------------------------------
     // 2) 스테이지 파일 이름 생성
@@ -66,38 +65,39 @@ int load_stage(Stage *stage, int stage_id) {
     // ----------------------------------------------------------
     char filename[64];
     snprintf(filename, sizeof(filename), "assets/scaled_it5_%df.map", stage_id);
-      // main 에서 stage_id는 계속 갱신
-
+    // main 에서 stage_id는 계속 갱신
 
     // ----------------------------------------------------------
     // 3) 파일 열기 (읽기 모드)
     // ----------------------------------------------------------
     FILE *fp = fopen(filename, "r");
-    if (!fp) {
-        perror("fopen");   // 왜 실패했는지 시스템 메시지 출력
+    if (!fp)
+    {
+        perror("fopen"); // 왜 실패했는지 시스템 메시지 출력
         return -1;
     }
 
-
     char line[1024];   // 한 줄을 임시로 저장하는 버퍼
-    int  y = 0;        // 현재 맵의 y 위치
-    int  max_width = 0; // 가장 긴 줄의 길이를 저장
-
+    int y = 0;         // 현재 맵의 y 위치
+    int max_width = 0; // 가장 긴 줄의 길이를 저장
 
     // ----------------------------------------------------------
     // 4) 파일을 한 줄씩 읽으면서 맵을 채움
     // ----------------------------------------------------------
-    while (y < MAX_Y && fgets(line, sizeof(line), fp)) {   // MAX_y는 game.h에 정의됨.
+    while (y < MAX_Y && fgets(line, sizeof(line), fp))
+    { // MAX_y는 game.h에 정의됨.
 
         int len = (int)strlen(line);
 
         // 줄 끝의 개행문자 제거
-        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r')) {
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+        {
             line[--len] = '\0';
         }
-        
+
         // 가장 긴 줄 길이 추적
-        if (len > max_width) {
+        if (len > max_width)
+        {
             max_width = len;
         }
 
@@ -105,12 +105,14 @@ int load_stage(Stage *stage, int stage_id) {
         // 현재 줄(line) 데이터를 x=0~MAX_X-1까지 스캔하며
         // Stage.map[y][x] 채우기
         // ------------------------------------------------------
-        for (int x = 0; x < MAX_X; x++) {
+        for (int x = 0; x < MAX_X; x++)
+        {
 
             // 파일의 현재 줄에 글자가 없다면 공백 취급
             char c = (x < len) ? line[x] : ' ';
 
-            if (c == 'S') {
+            if (c == 'S')
+            {
                 // 플레이어 시작 위치
                 stage->start_x = x;
                 stage->start_y = y;
@@ -118,7 +120,8 @@ int load_stage(Stage *stage, int stage_id) {
                 // 맵에는 플레이어를 그리지 않음 → 빈 공간
                 stage->map[y][x] = ' ';
             }
-            else if (c == 'G') {
+            else if (c == 'G')
+            {
                 // 골 위치
                 stage->goal_x = x;
                 stage->goal_y = y;
@@ -126,50 +129,81 @@ int load_stage(Stage *stage, int stage_id) {
                 // 맵에는 실제로 'G' 표시 남겨 사용
                 stage->map[y][x] = 'G';
             }
-            else if (c == 'X') {
-                // 장애물 초기 위치 → Obstacle 구조체에 저장
-                if (stage->num_obstacles < MAX_OBSTACLES) {   // MAX_obstacles 는 맵에 장애물 그려야지 나옴
-
-                    // 새 장애물 생성
+            else if (c == 'X')
+            {
+                if (stage->num_obstacles < MAX_OBSTACLES)
+                {
                     Obstacle *o = &stage->obstacles[stage->num_obstacles++];
 
+                    // 기본 위치
                     o->x = x;
                     o->y = y;
-                    o->dir = 1;                   // 초기 이동 방향
-                    o->type = (stage_id + x + y) % 2; // (임의) 수평/수직 선택
+
+                    // 기본 이동 방향 + 타입(기존 로직 유지)
+                    o->dir = 1;
+                    o->type = (stage_id + x + y) % 2;
+
+                    // ====== 🔥 새 필드 초기화 (중요) ======
+                    o->kind = OBSTACLE_KIND_LINEAR; // 기본은 일반 장애물
+                    o->hp = 3;                      // 투사체 3번 맞으면 죽는 기본값
+                    o->active = 1;                  // 활성화
+
+                    // spinner 용 기본 초기화
+                    o->center_x = x;
+                    o->center_y = y;
+                    o->radius = 0;
+                    o->angle_step = 0;
+                    o->angle_index = 0;
+
+                    // 교수님(Professor)용 기본값
+                    o->alert = 0;
+                    o->sight_range = 5; // 기본 시야 5칸
                 }
 
-                // 맵에는 장애물 대신 빈 공간 기록
                 stage->map[y][x] = ' ';
             }
-            else {
+            else if (c == 'I')
+            {
+                // 아이템 생성
+                if (stage->num_items < MAX_ITEMS)
+                {
+                    Item *it = &stage->items[stage->num_items++];
+                    it->x = x;
+                    it->y = y;
+                    it->type = ITEM_TYPE_SHIELD;
+                    it->active = 1;
+                }
+                // 맵에는 아이템 표시 대신 공간
+                stage->map[y][x] = ' ';
+            }
+            else
+            {
                 // '@', '#', ' ' 등 일반 문자는 그대로 기록
                 stage->map[y][x] = c;
             }
         }
 
-        stage->map[y][MAX_X] = '\0';   // 문자열 종단자 추가
+        stage->map[y][MAX_X] = '\0'; // 문자열 종단자 추가
         y++;
     }
-
 
     // ----------------------------------------------------------
     // 5) 자동으로 실제 맵 크기 기록
     // ----------------------------------------------------------
     stage->height = y;        // 총 몇 줄을 읽었는가?
-    stage->width  = max_width; // 가장 긴 줄의 길이
-
+    stage->width = max_width; // 가장 긴 줄의 길이
 
     // ----------------------------------------------------------
     // 6) 남은 줄은 공백으로 초기화
     // ----------------------------------------------------------
-    for (; y < MAX_Y; y++) {
-        for (int x = 0; x < MAX_X; x++) {
+    for (; y < MAX_Y; y++)
+    {
+        for (int x = 0; x < MAX_X; x++)
+        {
             stage->map[y][x] = ' ';
         }
         stage->map[y][MAX_X] = '\0';
     }
-
 
     fclose(fp);
     return 0;

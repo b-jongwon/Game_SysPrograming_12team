@@ -1,4 +1,4 @@
-#include "player.h"
+#include "../include/player.h"
 
 void init_player(Player *p, const Stage *stage) {
     p->x = stage->start_x;
@@ -9,6 +9,7 @@ void init_player(Player *p, const Stage *stage) {
     p->anim_step = 0;
     p->is_moving = 0;
     p->last_move_time = 0.0;
+    p->shield_count = 0; // 아이템 초기값 추가.
 }
 
 static int is_wall(char cell) {

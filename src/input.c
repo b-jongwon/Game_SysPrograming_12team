@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 
-#include "signal_handler.h"
-#include "input.h"
+#include "../include/signal_handler.h"
+#include "../include/input.h"
 
 static int translate_key(SDL_Keycode key)
 {

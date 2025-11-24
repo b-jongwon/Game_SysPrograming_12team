@@ -22,6 +22,32 @@
 // - 스테이지 설계 시 장애물 개수를 이 값 이하로 제한해야 함.
 #define MAX_OBSTACLES 64
 
+// 한 스테이지에 배치 가능한 최대 아이템 개수
+#define MAX_ITEMS 32
+
+// 한 스테이지에서 동시에 존재할 수 있는 최대 투사체 개수
+#define MAX_PROJECTILES 64
+
+// 아이템 종류
+typedef enum {
+    ITEM_TYPE_SHIELD = 0,   // 한 번 죽을 상황을 무효화해주는 보호막 아이템
+    // 나중에 ITEM_TYPE_SPEED, ITEM_TYPE_POWER 등 추가 가능
+} ItemType;
+
+// 맵에 놓이는 아이템 하나
+typedef struct {
+    int x, y;       // 맵 상의 위치
+    ItemType type;  // 아이템 종류
+    int active;     // 1: 아직 남아 있음, 0: 먹혔거나 제거됨
+} Item;
+
+// 플레이어가 발사하는 투사체
+typedef struct {
+    int x, y;   // 현재 위치
+    int dx, dy; // 이동 방향 (예: (1,0), (-1,0), (0,1), (0,-1))
+    int active; // 1: 살아 있는 투사체, 0: 소멸
+} Projectile;
+
 // 플레이어가 바라보는 방향
 typedef enum {
     PLAYER_FACING_DOWN = 0,
@@ -42,17 +68,45 @@ typedef struct {
     int anim_step;     // 이동 중 프레임 토글 (0/1)
     int is_moving;     // 1이면 이동 중, 0이면 정지 상태
     double last_move_time; // 마지막으로 실제 이동한 시각(초)
+    int shield_count;  // 한 번 살려주는 보호막 개수 (아이템 먹으면 증가, 충돌 시 소비)
 } Player;
+
+
+// 장애물의 "역할" 종류
+// - 기존 type(0/1)은 단순히 수평/수직 이동 구분용으로 그대로 두고,
+//   kind는 이 장애물이 어떤 캐릭터/패턴인지 구분하는 용도.
+typedef enum {
+    OBSTACLE_KIND_LINEAR = 0,    // 기존: 상하/좌우로 왔다갔다 하는 일반 장애물
+    OBSTACLE_KIND_SPINNER,       // 새로 추가할: 중심을 기준으로 빙글빙글 도는 장애물
+    OBSTACLE_KIND_PROFESSOR      // 교수님: 시야/추격 AI를 가질 장애물
+} ObstacleKind;
 
 // Obstacle 구조체
 // - 움직이는 장애물 하나를 표현.
 // - x, y: 현재 위치
 // - dir: 이동 방향 (수평/수직에 따라 의미가 달라짐)
 // - type: 장애물의 이동 타입 (0 = 가로로 이동, 1 = 세로로 이동)
+// - kind: 이 장애물이 어떤 "역할"인지 (일반 / 회전 / 교수님)
+// - hp: 투사체에 맞으면 줄어드는 체력 (0 이하이면 비활성화)
+// - active: 0이면 죽은 장애물(렌더/충돌에서 무시)
 typedef struct {
     int x, y;      // 장애물 현재 위치 (맵 좌표)
     int dir;       // 이동 방향. +1이면 오른쪽/아래, -1이면 왼쪽/위 방향으로 이동하도록 사용.
     int type;      // 장애물 타입. 0 = horizontal(수평 이동), 1 = vertical(수직 이동)
+
+    ObstacleKind kind;  // 장애물 역할 종류 (linear / spinner / professor)
+    int hp;             // 체력 (투사체에 맞으면 감소)
+    int active;         // 1: 활성, 0: 비활성(죽은 상태)
+
+    // 회전형(spinner) 장애물용 필드
+    int center_x, center_y;  // 회전 중심 좌표
+    int radius;              // 중심으로부터의 거리
+    int angle_step;          // 각도 변화 단위(몇 틱마다 한 칸 회전)
+    int angle_index;         // 현재 각도 인덱스(0,1,2,3 같은 식으로 사용 예정)
+
+    // 교수님(Professor) AI용 필드
+    int alert;               // 0: 평상시/순찰, 1: 플레이어를 발견하고 추격 중
+    int sight_range;         // 시야 거리 (몇 칸까지 보는지)
 } Obstacle;
 
 // Stage 구조체
@@ -71,7 +125,14 @@ typedef struct {
     int num_obstacles;                   // 장애물 개수
     Obstacle obstacles[MAX_OBSTACLES];   // 장애물 배열
 
-    // 🔥 새로 추가
+     // 아이템 관련 필드
+    int num_items;                       // 아이템 개수
+    Item items[MAX_ITEMS];               // 아이템 배열
+
+    // 투사체 관련 필드
+    int num_projectiles;                 // 사용 중인 투사체 개수 (혹은 전체 슬롯 수 관리용)
+    Projectile projectiles[MAX_PROJECTILES]; // 투사체 배열
+   
     int width;                           // 실제 사용 중인 맵 가로 길이
     int height;                          // 실제 사용 중인 맵 세로 길이
 } Stage;

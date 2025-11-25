@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "../include/game.h"
 #include "../include/stage.h"
@@ -13,9 +14,10 @@
 #include "../include/input.h"
 #include "../include/signal_handler.h"
 #include "../include/projectile.h"
+#include "../include/sound.h" //bgm 추가
 
-extern int is_goal_reached(const Stage *stage,  const Player *player);
-extern int check_collision(Stage *stage,  Player *player);
+extern int is_goal_reached(const Stage *stage, const Player *player);
+extern int check_collision(Stage *stage, Player *player);
 
 #define NUM_STAGES 6
 
@@ -30,11 +32,15 @@ int main(void)
     }
 
     init_input();
+    const char *bgm_file_path = "bgm/ex_bgm.wav";          // bgm 파일 경로 설정
+    const char *gameover_bgm_path = "bgm/bgm_GameOut.wav"; // 장애물 게임오버 bgm 파일 경로 설정
 
     struct timeval global_start, global_end;
     gettimeofday(&global_start, NULL);
 
     int cleared_all = 1;
+
+    play_bgm(bgm_file_path, 1); // BGM 재생 시작 (Non-blocking)
 
     for (int s = 1; s <= NUM_STAGES && g_running; s++)
     {
@@ -42,6 +48,7 @@ int main(void)
         if (load_stage(&stage, s) != 0)
         {
             fprintf(stderr, "Failed to load stage %d\n", s);
+            stop_bgm(); // 오류 발생시 bgm 중지
             cleared_all = 0;
             break;
         }
@@ -52,6 +59,7 @@ int main(void)
         if (start_obstacle_thread(&stage) != 0)
         {
             fprintf(stderr, "Failed to start obstacle thread\n");
+            stop_bgm(); // 오류 발생시 bgm 중지
             cleared_all = 0;
             break;
         }
@@ -79,8 +87,10 @@ int main(void)
 
             pthread_mutex_lock(&g_stage_mutex);
 
-            if (check_collision(&stage, &player))  // 충돌 체크
+            if (check_collision(&stage, &player)) // 충돌 체크
             {
+                stop_bgm();                                    // 충돌 시 기존 BGM 중지
+                play_obstacle_caught_sound(gameover_bgm_path); // 장애물 게임오버 사운드 재생 (Blocking)
                 stage_failed = 1;
                 pthread_mutex_unlock(&g_stage_mutex);
                 break;
@@ -112,11 +122,9 @@ int main(void)
                     continue; // 이동 처리와 겹치지 않게 skip
                 }
 
-                
-                    pthread_mutex_lock(&g_stage_mutex);
-                    move_player(&player, (char)key, &stage, elapsed);
-                    pthread_mutex_unlock(&g_stage_mutex);
-                
+                pthread_mutex_lock(&g_stage_mutex);
+                move_player(&player, (char)key, &stage, elapsed);
+                pthread_mutex_unlock(&g_stage_mutex);
             }
             else
             {
@@ -124,7 +132,7 @@ int main(void)
                 update_player_idle(&player, elapsed);
                 pthread_mutex_unlock(&g_stage_mutex);
             }
-            
+
             // ===== 아이템 획득 체크 =====
             pthread_mutex_lock(&g_stage_mutex);
             for (int i = 0; i < stage.num_items; i++)
@@ -195,6 +203,8 @@ int main(void)
     best_time = load_best_record();
     printf("Best Record: %.3fs\n", best_time);
     printf("Your Time : %.3fs\n", total_time);
+
+    stop_bgm(); // 게임 종료 시 BGM 중지
 
     restore_input();
     shutdown_renderer();

@@ -56,9 +56,15 @@ static SDL_Renderer *g_renderer = NULL;
 static SDL_Texture *g_tex_floor = NULL;
 static SDL_Texture *g_tex_wall = NULL;
 static SDL_Texture *g_tex_goal = NULL;
-static SDL_Texture *g_tex_professor = NULL;
+
+static SDL_Texture *g_tex_professor = NULL;   // P 교수님
+static SDL_Texture *g_tex_spinner = NULL;     // R (스피너)
+static SDL_Texture *g_tex_obstacle = NULL;    // X (일반 장애물)
+
+
 static SDL_Texture *g_tex_item_shield = NULL; // 아이템
 static SDL_Texture *g_tex_projectile = NULL;  // 투사체
+
 static SDL_Texture *g_tex_exit = NULL;
 
 static SDL_Texture *g_player_textures[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT][PLAYER_FRAME_COUNT] = {{{NULL}}};
@@ -144,10 +150,16 @@ int init_renderer(void)
     g_tex_floor = load_texture("assets/image/floor64.png");
     g_tex_wall = load_texture("assets/image/wall64.png");
     g_tex_goal = load_texture("assets/image/backpack64.png");
-    g_tex_professor = load_texture("assets/image/professor64.png");
     g_tex_exit = load_texture("assets/image/exit.PNG");
+
+    g_tex_professor = load_texture("assets/image/한명균교수님.png");
+    g_tex_obstacle = load_texture("assets/image/professor64.png");    // X (일반)
+    g_tex_spinner = load_texture("assets/image/professor64.png");     // R (스피너)
+    
+
     g_tex_item_shield = load_texture("assets/image/professor64.png"); // 아이템 임시 렌더링
     g_tex_projectile = load_texture("assets/image/professor64.png");  // 투사체 임시 렌더링
+
     if (!g_tex_projectile)
         return -1;
 
@@ -185,10 +197,14 @@ void shutdown_renderer(void)
     destroy_texture(&g_tex_floor);
     destroy_texture(&g_tex_wall);
     destroy_texture(&g_tex_goal);
-    destroy_texture(&g_tex_professor);
     destroy_texture(&g_tex_exit);
+
+    destroy_texture(&g_tex_professor);   // 교수
+    destroy_texture(&g_tex_obstacle);    // 일반 장애물
+    destroy_texture(&g_tex_spinner);     // 도는 장애물
     destroy_texture(&g_tex_item_shield); // 아이템 렌더링 셧다운
     destroy_texture(&g_tex_projectile);  // 투사체 셧다운
+    
 
     for (int variant = 0; variant < PLAYER_VARIANT_COUNT; variant++)
     {
@@ -287,9 +303,29 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
     {
         const Obstacle *o = &stage->obstacles[i];
         if (!o->active)
-            continue; // 비활성화 장애물은 건너뜀
+            continue;
 
-        draw_texture(g_tex_professor, o->x, o->y);
+        SDL_Texture *tex_to_draw = NULL;
+
+        switch (o->kind)
+        {
+        case OBSTACLE_KIND_PROFESSOR:
+            tex_to_draw = g_tex_professor;
+            break;
+        case OBSTACLE_KIND_SPINNER:
+            tex_to_draw = g_tex_spinner;
+            break;
+        
+        case OBSTACLE_KIND_LINEAR:
+        default:
+            tex_to_draw = g_tex_obstacle;
+            break;
+        }
+
+        if (tex_to_draw)
+        {
+            draw_texture(tex_to_draw, o->x, o->y);
+        }
     }
 
     for (int i = 0; i < stage->num_items; i++)

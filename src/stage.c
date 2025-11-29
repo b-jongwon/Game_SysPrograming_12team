@@ -129,38 +129,46 @@ int load_stage(Stage *stage, int stage_id)
                 // 맵에는 실제로 'G' 표시 남겨 사용
                 stage->map[y][x] = 'G';
             }
-            else if (c == 'X')
+            else if (c == 'X' || c == 'P' || c == 'R')
             {
                 if (stage->num_obstacles < MAX_OBSTACLES)
                 {
                     Obstacle *o = &stage->obstacles[stage->num_obstacles++];
 
-                    // 기본 위치
                     o->x = x;
                     o->y = y;
-
-                    // 기본 이동 방향 + 타입(기존 로직 유지)
                     o->dir = 1;
-                    o->type = (stage_id + x + y) % 2;
+                    o->type = (stage_id + x + y) % 2; // 이동 방향(가로/세로) 랜덤성 부여
+                    o->hp = 3;
+                    o->active = 1;
 
-                    // ====== 🔥 새 필드 초기화 (중요) ======
-                    o->kind = OBSTACLE_KIND_LINEAR; // 기본은 일반 장애물
-                    o->hp = 3;                      // 투사체 3번 맞으면 죽는 기본값
-                    o->active = 1;                  // 활성화
+                    // --- 🔥 여기가 핵심: 문자에 따라 종류(kind) 결정 ---
+                    if (c == 'P')
+                    {
+                        o->kind = OBSTACLE_KIND_PROFESSOR;
+                        o->sight_range = 8; // 교수님은 시야가 넓음 (8칸)
+                        o->alert = 0;
+                    }
+                    else if (c == 'R')
+                    {
+                        o->kind = OBSTACLE_KIND_SPINNER;
+                        o->center_x = x; // 현재 위치를 회전 중심점으로 잡음
+                        o->center_y = y;
+                        o->radius = 4;      // 반지름 4칸 (기본값 설정)
+                        o->angle_index = 0; // 0도부터 시작
 
-                    // spinner 용 기본 초기화
-                    o->center_x = x;
-                    o->center_y = y;
-                    o->radius = 0;
-                    o->angle_step = 0;
-                    o->angle_index = 0;
+                        // 스피너는 시작 위치가 중심점이므로,
+                        // 실제 렌더링될 위치(x,y)는 반지름만큼 떨어진 곳으로 바로 이동시켜두면 좋습니다.
+                        o->x = x + 4; // radius 만큼 옆으로 이동한 상태로 시작
+                    }
 
-                    // 교수님(Professor)용 기본값
-                    o->alert = 0;
-                    o->sight_range = 5; // 기본 시야 5칸
+                    else
+                    {
+                        // 'X' 인 경우
+                        o->kind = OBSTACLE_KIND_LINEAR;
+                    }
                 }
-
-                stage->map[y][x] = ' ';
+                stage->map[y][x] = ' '; // 맵 상에서는 지워서 이동 가능 공간으로 만듦
             }
             else if (c == 'I')
             {

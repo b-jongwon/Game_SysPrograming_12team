@@ -55,7 +55,9 @@ int main(void)
 
         Player player;
         init_player(&player, &stage);
-
+        
+        set_obstacle_player_ref(&player);
+        
         if (start_obstacle_thread(&stage) != 0)
         {
             fprintf(stderr, "Failed to start obstacle thread\n");

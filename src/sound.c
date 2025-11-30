@@ -71,7 +71,7 @@ void stop_bgm()
         // SIGKILL(9) 사용: BGM 프로세스 그룹 전체를 강제 종료
         if (kill(-bgm_pid, SIGKILL) == 0)
         {
-            printf("\nBGM process group (Root PID %d) forcibly terminated by SIGKILL.\n", bgm_pid);
+            // printf("\nBGM process group (Root PID %d) forcibly terminated by SIGKILL.\n", bgm_pid);
         }
         else
         {

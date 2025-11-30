@@ -32,10 +32,11 @@ int main(void)
     }
 
     init_input();
-    const char *bgm_file_path = "bgm/ex_bgm.wav";          // bgm 파일 경로 설정
-    const char *gameover_bgm_path = "bgm/bgm_GameOut.wav"; // 장애물 게임오버 bgm 파일 경로 설정
-    const char *item_sound_path = "bgm/Get_Item.wav";      // 아이템 획득 사운드 파일 경로 설정
-    const char *item_use_sound_path = "bgm/Use_Item.wav";  // 아이템 사용 사운드 파일 경로 설정
+    const char *bgm_file_path = "bgm/ex_bgm.wav";             // bgm 파일 경로 설정
+    const char *gameover_bgm_path = "bgm/bgm_GameOut.wav";    // 장애물 게임오버 bgm 파일 경로 설정
+    const char *item_sound_path = "bgm/Get_Item.wav";         // 아이템 획득 사운드 파일 경로 설정
+    const char *item_use_sound_path = "bgm/Use_Item.wav";     // 아이템 사용 사운드 파일 경로 설정
+    const char *next_level_sound_path = "bgm/Next_Level.wav"; // 스테이지 클리어, 다음 레벨 전환 사운드 파일 경로 설정
 
     struct timeval global_start, global_end;
     gettimeofday(&global_start, NULL);
@@ -180,6 +181,8 @@ int main(void)
 
         if (stage_cleared)
         {
+            play_sfx_nonblocking(next_level_sound_path); // 다음 레벨 전환 사운드 재생 (논블로킹)
+
             printf("Stage %d Cleared!\n", s);
             fflush(stdout);
             sleep(1);

@@ -35,6 +35,7 @@ int main(void)
     const char *item_sound_path = "bgm/Get_Item.wav";         // 아이템 획득 사운드 파일 경로 설정
     const char *item_use_sound_path = "bgm/Use_Item.wav";     // 아이템 사용 사운드 파일 경로 설정
     const char *next_level_sound_path = "bgm/Next_Level.wav"; // 스테이지 클리어, 다음 레벨 전환 사운드 파일 경로 설정
+    const char *bag_acquire_sound_path = "bgm/Get_Bag.wav";   // 가방 획득 사운드 파일 경로 설정
 
     struct timeval global_start, global_end;
     gettimeofday(&global_start, NULL);
@@ -86,6 +87,8 @@ int main(void)
             {
                 player.has_backpack = 1;
                 stage.map[stage.goal_y][stage.goal_x] = ' ';
+
+                play_sfx_nonblocking(bag_acquire_sound_path); // 가방 획득 사운드 재생 (Non-blocking)
             }
             render(&stage, &player, elapsed, s, total_stages);
             pthread_mutex_unlock(&g_stage_mutex);

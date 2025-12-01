@@ -2,11 +2,20 @@
 #include <unistd.h>  // usleep
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../include/obstacle.h"       // move_obstacles, start/stop 함수 선언 및 g_stage_mutex extern
 #include "../include/game.h"           // Stage, Obstacle, MAX_X, MAX_Y 등
 #include "../include/signal_handler.h" // g_running 전역 플래그
 #include "../include/collision.h"
+
+
+
+typedef struct {
+    int x, y;      // 타일 좌표
+    int first_dir; // 출발지에서 처음 움직였던 방향 (1:우, 2:좌, 3:하, 4:상)
+} Node;
+#define QUEUE_SIZE (MAX_X * MAX_Y)
 
 // 전역 뮤텍스 정의.
 // - obstacle.h에 extern으로 선언되어 있고,
@@ -60,131 +69,185 @@ static void update_spinner(Obstacle *o, Stage *stage)
     o->angle_index++;
 }
 
+
+// Bfs 로 교수님 로직 변경
+static int get_next_step_bfs(Stage *stage, int start_tx, int start_ty, int target_tx, int target_ty)
+{
+    // 이미 목표에 도착했으면 정지
+    if (start_tx == target_tx && start_ty == target_ty) return 0;
+
+  
+    static char visited[MAX_Y][MAX_X];
+    memset(visited, 0, sizeof(visited));
+
+    static Node queue[QUEUE_SIZE];
+    int front = 0;
+    int rear = 0;
+
+   
+    visited[start_ty][start_tx] = 1;
+    queue[rear++] = (Node){start_tx, start_ty, 0};
+
+   
+    int dx[4] = {1, -1, 0, 0};
+    int dy[4] = {0, 0, 1, -1};
+    int dir_code[4] = {1, 2, 3, 4};
+
+    while (front < rear)
+    {
+        Node cur = queue[front++];
+
+       
+        if (cur.x == target_tx && cur.y == target_ty) {
+            return cur.first_dir;
+        }
+
+        
+        for (int i = 0; i < 4; i++)
+        {
+            int nx = cur.x + dx[i];
+            int ny = cur.y + dy[i];
+
+           
+            if (nx < 0 || nx >= MAX_X || ny < 0 || ny >= MAX_Y) continue;
+            
+          
+            if (visited[ny][nx]) continue;
+            if (stage->map[ny][nx] == '#' || stage->map[ny][nx] == '@') continue;
+
+            visited[ny][nx] = 1;
+
+           
+            int next_first_dir = (cur.first_dir == 0) ? dir_code[i] : cur.first_dir;
+            queue[rear++] = (Node){nx, ny, next_first_dir};
+
+            if (rear >= QUEUE_SIZE) return 0;
+        }
+    }
+    return 0; 
+}
+
 // ----------------------------------------------------------
 // 내부 헬퍼 함수 2: 교수님 AI (추격) 로직
 // ----------------------------------------------------------
+// obstacle.c
+
+// src/obstacle.c
+
 static void update_professor(Obstacle *o, Stage *stage, double delta_time)
 {
-    if (!g_player_ref)
-        return; // 플레이어 정보 없으면 아무것도 안 함
+    if (!g_player_ref) return;
 
-    // 1. 플레이어와의 거리 계산 (맨해튼 거리)
-    int dx_world = g_player_ref->world_x - o->world_x;
-    int dy_world = g_player_ref->world_y - o->world_y;
-    double dist_tiles = (fabs((double)dx_world) + fabs((double)dy_world)) /
-                        (double)SUBPIXELS_PER_TILE;
-
-    if (dist_tiles <= o->sight_range)
-    {
-        o->alert = 1; // 발견!
-    }
-    else
-    {
-        o->alert = 0; // 놓침 (또는 원래대로)
+   
+    if (o->alert == 0) {
+        int dx = g_player_ref->world_x - o->world_x;
+        int dy = g_player_ref->world_y - o->world_y;
+        double dist = (fabs((double)dx) + fabs((double)dy)) / (double)SUBPIXELS_PER_TILE;
+        if (dist <= o->sight_range) o->alert = 1;
     }
 
-    if (delta_time < 0.0)
-        delta_time = 0.0;
-
+  
+    if (delta_time < 0.0) delta_time = 0.0;
     o->move_accumulator += o->move_speed * delta_time;
     int pixels_to_move = (int)floor(o->move_accumulator);
-    if (pixels_to_move <= 0)
-        return;
-    if (pixels_to_move > SUBPIXELS_PER_TILE)
-        pixels_to_move = SUBPIXELS_PER_TILE;
+
+    if (pixels_to_move <= 0) return;
+    if (pixels_to_move > SUBPIXELS_PER_TILE) pixels_to_move = SUBPIXELS_PER_TILE;
     o->move_accumulator -= pixels_to_move;
 
-    const int tile_size = SUBPIXELS_PER_TILE;
+  
+    const int TILE = SUBPIXELS_PER_TILE;
+
+   
     for (int step = 0; step < pixels_to_move; ++step)
     {
         if (o->alert)
         {
-            int player_center_x = g_player_ref->world_x + tile_size / 2;
-            int player_center_y = g_player_ref->world_y + tile_size / 2;
-            int obstacle_center_x = o->world_x + tile_size / 2;
-            int obstacle_center_y = o->world_y + tile_size / 2;
+        
+            int center_x = o->world_x + TILE / 2;
+            int center_y = o->world_y + TILE / 2;
 
-            int diff_x = player_center_x - obstacle_center_x;
-            int diff_y = player_center_y - obstacle_center_y;
-            int step_x = 0;
-            int step_y = 0;
+            int cur_tx = center_x / TILE;
+            int cur_ty = center_y / TILE;
+            
+           
+            int target_tx = (g_player_ref->world_x + TILE / 2) / TILE;
+            int target_ty = (g_player_ref->world_y + TILE / 2) / TILE;
 
-            if (abs(diff_x) >= abs(diff_y) && diff_x != 0)
-            {
-                step_x = (diff_x > 0) ? 1 : -1;
+         
+    
+            int next_dir = get_next_step_bfs(stage, cur_tx, cur_ty, target_tx, target_ty);
+            
+            int dx = 0;
+            int dy = 0;
+
+            
+          
+            int tile_center_world_x = cur_tx * TILE; 
+            int tile_center_world_y = cur_ty * TILE; 
+            
+            
+            
+            int align_power = 1;
+
+            if (next_dir == 1) { 
+                dx = 1;
+               
+                if (o->world_y > tile_center_world_y) dy = -align_power;
+                else if (o->world_y < tile_center_world_y) dy = align_power;
+            } 
+            else if (next_dir == 2) { 
+                dx = -1;
+               
+                if (o->world_y > tile_center_world_y) dy = -align_power;
+                else if (o->world_y < tile_center_world_y) dy = align_power;
+            } 
+            else if (next_dir == 3) { 
+                dy = 1;
+               
+                if (o->world_x > tile_center_world_x) dx = -align_power;
+                else if (o->world_x < tile_center_world_x) dx = align_power;
+            } 
+            else if (next_dir == 4) { 
+                dy = -1;
+             
+                if (o->world_x > tile_center_world_x) dx = -align_power;
+                else if (o->world_x < tile_center_world_x) dx = align_power;
             }
-            else if (diff_y != 0)
-            {
-                step_y = (diff_y > 0) ? 1 : -1;
-            }
 
-            if (step_x != 0)
-            {
-                if (!try_move_obstacle(o, stage, step_x, 0))
-                {
-                    if (diff_y != 0)
-                    {
-                        step_y = (diff_y > 0) ? 1 : -1;
-                        if (!try_move_obstacle(o, stage, 0, step_y))
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        break;
+           
+            if (dx != 0 || dy != 0) {
+               
+                if (try_move_obstacle(o, stage, dx, dy)) {
+                   
+                } 
+               
+                else {
+                    int main_dx = (next_dir == 1) ? 1 : ((next_dir == 2) ? -1 : 0);
+                    int main_dy = (next_dir == 3) ? 1 : ((next_dir == 4) ? -1 : 0);
+                    
+                    if (!try_move_obstacle(o, stage, main_dx, main_dy)) {
+                        
+                        int align_dx = dx - main_dx;
+                        int align_dy = dy - main_dy;
+                        try_move_obstacle(o, stage, align_dx, align_dy);
                     }
                 }
-            }
-            else if (step_y != 0)
-            {
-                if (!try_move_obstacle(o, stage, 0, step_y))
-                {
-                    if (diff_x != 0)
-                    {
-                        step_x = (diff_x > 0) ? 1 : -1;
-                        if (!try_move_obstacle(o, stage, step_x, 0))
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                break; // 이미 같은 위치
             }
         }
         else
         {
+         
             int dir = (o->dir == 0) ? 1 : o->dir;
-            int moved = 0;
-            if (o->type == 0)
-            {
-                moved = try_move_obstacle(o, stage, dir, 0);
-            }
-            else
-            {
-                moved = try_move_obstacle(o, stage, 0, dir);
-            }
-
-            if (!moved)
-            {
-                o->dir *= -1;
-                dir = (o->dir == 0) ? 1 : o->dir;
-                if (o->type == 0)
-                {
-                    if (!try_move_obstacle(o, stage, dir, 0))
-                        break;
+            if (o->type == 0) { 
+                if (!try_move_obstacle(o, stage, dir, 0)) {
+                    o->dir = -dir;
+                    try_move_obstacle(o, stage, o->dir, 0);
                 }
-                else
-                {
-                    if (!try_move_obstacle(o, stage, 0, dir))
-                        break;
+            } else { 
+                if (!try_move_obstacle(o, stage, 0, dir)) {
+                    o->dir = -dir;
+                    try_move_obstacle(o, stage, 0, o->dir);
                 }
             }
         }

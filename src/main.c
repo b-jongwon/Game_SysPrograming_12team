@@ -32,7 +32,7 @@ int main(void)
     }
 
     init_input();
-    const char *bgm_file_path = "bgm/ex_bgm.wav";             // bgm 파일 경로 설정
+    const char *bgm_file_path = "bgm/BGM.wav";                // bgm 파일 경로 설정
     const char *gameover_bgm_path = "bgm/bgm_GameOut.wav";    // 장애물 게임오버 bgm 파일 경로 설정
     const char *item_sound_path = "bgm/Get_Item.wav";         // 아이템 획득 사운드 파일 경로 설정
     const char *item_use_sound_path = "bgm/Use_Item.wav";     // 아이템 사용 사운드 파일 경로 설정

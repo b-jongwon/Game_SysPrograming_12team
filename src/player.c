@@ -9,7 +9,12 @@ void init_player(Player *p, const Stage *stage) {
     p->world_y = stage->start_y * SUBPIXELS_PER_TILE;
     p->target_world_x = p->world_x;
     p->target_world_y = p->world_y;
-    p->move_speed = SUBPIXELS_PER_TILE / 0.18; // 약 0.18초에 한 타일 이동
+
+    // [수정] 하드코딩 값을 제거하고 스테이지 설정값을 사용
+    // 만약 설정값이 0.0이면 안전장치로 0.18 사용
+    double speed_setting = (stage->difficulty_player_speed > 0.0) ? stage->difficulty_player_speed : 0.18;
+    p->move_speed = SUBPIXELS_PER_TILE / speed_setting; 
+    
     p->move_accumulator = 0.0;
     p->moving = 0;
     p->alive = 1;
@@ -18,7 +23,7 @@ void init_player(Player *p, const Stage *stage) {
     p->anim_step = 0;
     p->is_moving = 0;
     p->last_move_time = 0.0;
-    p->shield_count = 0; // 아이템 초기값 추가.
+    p->shield_count = 0; 
 }
 
 static int is_wall(char cell) {

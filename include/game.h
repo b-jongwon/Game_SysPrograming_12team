@@ -49,6 +49,7 @@ typedef struct {
     int world_x, world_y; // 현재 위치 (서브픽셀)
     int dir_x, dir_y;     // 이동 방향 단위 벡터 (-1,0,1)
     int active;           // 1: 살아 있는 투사체, 0: 소멸
+    int distance_traveled; // 이동 거리 기억
 } Projectile;
 
 // 플레이어가 바라보는 방향
@@ -149,6 +150,9 @@ typedef struct {
    
     int width;                           // 실제 사용 중인 맵 가로 길이
     int height;                          // 실제 사용 중인 맵 세로 길이
+
+    double difficulty_player_speed;      // 플레이어 이동 속도 (타일당 초)
+    int remaining_ammo; // 게임당 발사 가능한 투사체 수 제한
 } Stage;
 
 #endif // GAME_H

@@ -38,6 +38,37 @@ static const StageFileInfo kStageFiles[] = {
     {"4f.map", "4F"},
     {"5f.map", "5F"}};
 
+typedef struct
+{
+    double player_sec_per_tile; // 플레이어가 한 타일 가는 데 걸리는 시간 (작을수록 빠름)
+    double obs_sec_per_tile;    // 일반 장애물(X, R) 이동 속도
+    double prof_sec_per_tile;   // 교수님(P) 이동 속도
+    int obs_hp;                 // 장애물 체력
+    int prof_sight;             // 교수님 시야 범위 (타일 수)
+    int initial_ammo;           // 게임당 발사 가능 투사체 수
+} StageDifficulty;
+
+static const StageDifficulty kDifficultySettings[] = {
+    {0.0, 0.0, 0.0, 0, 0, 0}, // 0번 인덱스 (사용 안 함)
+                                  // ★속도 관련 숫자는 작으면 빠름.
+    // Stage 1:                   // {플레이어 속도,일반 장애물 속도, 교수님 속도, 장애물 체력, 교수님 시야범위, 게임당 투사체 수)
+    {0.11, 0.20, 0.35, 2, 5, 10}, // 구조체 순서대로 설정하면 됩니다.
+                                    // 발사체 사거리는 projectile.c 에서  CONSTANT_PROJECTILE_RANGE 수정.
+    // Stage 2: 
+    {0.18, 0.25, 0.30, 3, 8, 3},
+
+    // Stage 3: 
+    {0.16, 0.20, 0.22, 4, 12, 3},
+
+    // Stage 4: 
+    {0.14, 0.15, 0.18, 5, 15, 3},
+
+    // Stage 5: 
+    {0.12, 0.12, 0.12, 5, 20, 3},
+
+    // Stage 6
+    {0.12, 0.12, 0.12, 6, 25, 5}};
+
 int get_stage_count(void)
 {
     return (int)(sizeof(kStageFiles) / sizeof(kStageFiles[0]));
@@ -84,12 +115,23 @@ int load_stage(Stage *stage, int stage_id)
 
     const StageFileInfo *info = &kStageFiles[stage_id - 1];
 
+    // 난이도 설정 가져오기 (범위 초과 시 기본값 사용 방지 로직 필요하면 추가)
+    StageDifficulty diff = kDifficultySettings[1]; // 기본값
+    if (stage_id < (int)(sizeof(kDifficultySettings) / sizeof(kDifficultySettings[0])))
+    {
+        diff = kDifficultySettings[stage_id];
+    }
+
     // ----------------------------------------------------------
     // 1) Stage 구조체 전체 초기화
     // ----------------------------------------------------------
     memset(stage, 0, sizeof(Stage)); // memset쓰면 구조체 변수들 0으로 초기화 됩니다.
 
     stage->id = stage_id; // stage id 인자로 받고 구조체에 저장.
+
+    // [설정 적용 1] 스테이지 전역 설정 저장 (플레이어/투사체용)
+    stage->difficulty_player_speed = diff.player_sec_per_tile;
+    stage->remaining_ammo = diff.initial_ammo;
 
     // ----------------------------------------------------------
     // 2) 스테이지 파일 이름 생성
@@ -173,42 +215,39 @@ int load_stage(Stage *stage, int stage_id)
                     o->world_y = y * SUBPIXELS_PER_TILE;
                     o->target_world_x = o->world_x;
                     o->target_world_y = o->world_y;
-                    o->move_speed = SUBPIXELS_PER_TILE / 0.25;
                     o->move_accumulator = 0.0;
                     o->moving = 0;
                     o->dir = 1;
-                    o->type = (stage_id + x + y) % 2; // 이동 방향(가로/세로) 랜덤성 부여
-                    o->hp = 3;
+                    o->type = (stage_id + x + y) % 2;
                     o->active = 1;
 
-                    // --- 🔥 여기가 핵심: 문자에 따라 종류(kind) 결정 ---
+                    // [설정 적용 2] 오브젝트 종류별 난이도 적용
                     if (c == 'P')
-                    {
+                    { // 교수님
                         o->kind = OBSTACLE_KIND_PROFESSOR;
-                        o->sight_range = 8; // 교수님은 시야가 넓음 (8칸)
+                        o->sight_range = diff.prof_sight;
+                        o->move_speed = SUBPIXELS_PER_TILE / diff.prof_sec_per_tile;
+                        o->hp = 999;
                         o->alert = 0;
                     }
                     else if (c == 'R')
-                    {
+                    { // 스피너
                         o->kind = OBSTACLE_KIND_SPINNER;
                         o->center_world_x = x * SUBPIXELS_PER_TILE;
                         o->center_world_y = y * SUBPIXELS_PER_TILE;
                         o->orbit_radius_world = 4 * SUBPIXELS_PER_TILE;
-                        o->angle_index = 0; // 0도부터 시작
-
+                        o->angle_index = 0;
                         o->world_x = o->center_world_x + o->orbit_radius_world;
                         o->world_y = o->center_world_y;
-                        o->target_world_x = o->world_x;
-                        o->target_world_y = o->world_y;
                     }
-
                     else
-                    {
-                        // 'X' 인 경우
+                    { // 일반 장애물 (X)
                         o->kind = OBSTACLE_KIND_LINEAR;
+                        o->move_speed = SUBPIXELS_PER_TILE / diff.obs_sec_per_tile;
+                        o->hp = diff.obs_hp;
                     }
                 }
-                stage->map[y][x] = ' '; // 맵 상에서는 지워서 이동 가능 공간으로 만듦
+                stage->map[y][x] = ' ';
             }
             else if (c == 'I')
             {

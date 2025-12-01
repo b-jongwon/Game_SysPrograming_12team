@@ -1,7 +1,83 @@
 #include <SDL2/SDL.h>
+#include <string.h>
 
 #include "../include/signal_handler.h"
 #include "../include/input.h"
+
+typedef struct
+{
+    SDL_Scancode primary;
+    SDL_Scancode secondary;
+    char symbol;
+} DirectionMap;
+
+static const DirectionMap kDirectionMap[] = {
+    {SDL_SCANCODE_W, SDL_SCANCODE_UP, 'w'},
+    {SDL_SCANCODE_S, SDL_SCANCODE_DOWN, 's'},
+    {SDL_SCANCODE_A, SDL_SCANCODE_LEFT, 'a'},
+    {SDL_SCANCODE_D, SDL_SCANCODE_RIGHT, 'd'},
+};
+
+static char g_direction_stack[4];
+static int g_direction_count = 0;
+static int g_direction_down[4] = {0};
+
+static void remove_direction(char dir)
+{
+    for (int i = 0; i < g_direction_count; ++i)
+    {
+        if (g_direction_stack[i] == dir)
+        {
+            for (int j = i; j < g_direction_count - 1; ++j)
+            {
+                g_direction_stack[j] = g_direction_stack[j + 1];
+            }
+            g_direction_count--;
+            break;
+        }
+    }
+}
+
+static void push_direction(char dir)
+{
+    remove_direction(dir);
+    if (g_direction_count < (int)(sizeof(g_direction_stack) / sizeof(g_direction_stack[0])))
+    {
+        g_direction_stack[g_direction_count++] = dir;
+    }
+}
+
+static void sync_direction_state(void)
+{
+    SDL_PumpEvents();
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    if (!state)
+    {
+        g_direction_count = 0;
+        memset(g_direction_down, 0, sizeof(g_direction_down));
+        return;
+    }
+
+    for (int i = 0; i < (int)(sizeof(kDirectionMap) / sizeof(kDirectionMap[0])); ++i)
+    {
+        int down = state[kDirectionMap[i].primary];
+        if (kDirectionMap[i].secondary != SDL_SCANCODE_UNKNOWN)
+        {
+            down = down || state[kDirectionMap[i].secondary];
+        }
+
+        if (down && !g_direction_down[i])
+        {
+            push_direction(kDirectionMap[i].symbol);
+            g_direction_down[i] = 1;
+        }
+        else if (!down && g_direction_down[i])
+        {
+            remove_direction(kDirectionMap[i].symbol);
+            g_direction_down[i] = 0;
+        }
+    }
+}
 
 static int translate_key(SDL_Keycode key)
 {
@@ -39,6 +115,7 @@ void restore_input(void)
 
 int read_input(void)
 {
+    sync_direction_state();
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -68,21 +145,10 @@ int poll_input(void)
 
 int current_direction_key(void)
 {
-    SDL_PumpEvents();
-    const Uint8 *state = SDL_GetKeyboardState(NULL);
-    if (!state)
+    sync_direction_state();
+    if (g_direction_count > 0)
     {
-        return -1;
+        return g_direction_stack[g_direction_count - 1];
     }
-
-    if (state[SDL_SCANCODE_W] || state[SDL_SCANCODE_UP])
-        return 'w';
-    if (state[SDL_SCANCODE_S] || state[SDL_SCANCODE_DOWN])
-        return 's';
-    if (state[SDL_SCANCODE_A] || state[SDL_SCANCODE_LEFT])
-        return 'a';
-    if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT])
-        return 'd';
-
     return -1;
 }

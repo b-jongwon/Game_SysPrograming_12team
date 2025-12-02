@@ -4,6 +4,32 @@
 #include "../include/player.h"
 #include "../include/collision.h"
 
+int g_player_anim_stride_pixels = 4;
+
+static PlayerAnimPhase advance_anim_phase(PlayerAnimPhase phase)
+{
+    switch (phase)
+    {
+    case PLAYER_ANIM_PHASE_IDLE_A:
+        return PLAYER_ANIM_PHASE_STEP_A;
+    case PLAYER_ANIM_PHASE_STEP_A:
+        return PLAYER_ANIM_PHASE_IDLE_B;
+    case PLAYER_ANIM_PHASE_IDLE_B:
+        return PLAYER_ANIM_PHASE_STEP_B;
+    case PLAYER_ANIM_PHASE_STEP_B:
+    default:
+        return PLAYER_ANIM_PHASE_IDLE_A;
+    }
+}
+
+static void set_idle_animation(Player *p)
+{
+    if (!p)
+        return;
+    p->anim_phase = PLAYER_ANIM_PHASE_IDLE_A;
+    p->anim_pixel_progress = 0;
+}
+
 void init_player(Player *p, const Stage *stage) {
     p->world_x = stage->start_x * SUBPIXELS_PER_TILE;
     p->world_y = stage->start_y * SUBPIXELS_PER_TILE;
@@ -20,7 +46,8 @@ void init_player(Player *p, const Stage *stage) {
     p->alive = 1;
     p->has_backpack = 0;
     p->facing = PLAYER_FACING_DOWN;
-    p->anim_step = 0;
+    p->anim_phase = PLAYER_ANIM_PHASE_IDLE_A;
+    p->anim_pixel_progress = 0;
     p->is_moving = 0;
     p->last_move_time = 0.0;
     p->shield_count = 0; 
@@ -38,7 +65,7 @@ void update_player_idle(Player *p, double current_time) {
 
     if (p->is_moving && current_time - p->last_move_time >= 0.5) {
         p->is_moving = 0;
-        p->anim_step = 0;
+        set_idle_animation(p);
     }
 }
 
@@ -169,13 +196,14 @@ static void start_movement(Player *p, int dir_x, int dir_y, PlayerFacing facing,
         return;
 
     const int step = PLAYER_MOVE_STEP_SUBPIXELS;
-    if (p->facing == facing && p->is_moving)
+    if (!p->is_moving)
     {
-        p->anim_step ^= 1;
-    }
-    else
-    {
-        p->anim_step = 0;
+        if (p->anim_phase != PLAYER_ANIM_PHASE_STEP_A &&
+            p->anim_phase != PLAYER_ANIM_PHASE_STEP_B)
+        {
+            p->anim_phase = advance_anim_phase(p->anim_phase);
+        }
+        p->anim_pixel_progress = 0;
     }
 
     p->target_world_x = p->world_x + dir_x * step;
@@ -386,6 +414,21 @@ int update_player_motion(Player *p, double delta_time) {
     {
         int dir = (p->target_world_y > p->world_y) ? 1 : -1;
         p->world_y += dir * actual;
+    }
+
+    if (actual > 0 && p->is_moving)
+    {
+        int stride = g_player_anim_stride_pixels;
+        if (stride <= 0)
+        {
+            stride = SUBPIXELS_PER_TILE;
+        }
+        p->anim_pixel_progress += actual;
+        while (p->anim_pixel_progress >= stride)
+        {
+            p->anim_pixel_progress -= stride;
+            p->anim_phase = advance_anim_phase(p->anim_phase);
+        }
     }
 
     int finished = 0;

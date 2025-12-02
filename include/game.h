@@ -61,6 +61,14 @@ typedef enum {
     PLAYER_FACING_COUNT
 } PlayerFacing;
 
+typedef enum {
+    PLAYER_ANIM_PHASE_IDLE_A = 0,
+    PLAYER_ANIM_PHASE_STEP_A,
+    PLAYER_ANIM_PHASE_IDLE_B,
+    PLAYER_ANIM_PHASE_STEP_B,
+    PLAYER_ANIM_PHASE_COUNT
+} PlayerAnimPhase;
+
 // Player 구조체
 // - 플레이어 캐릭터의 상태를 표현.
 // - 서브픽셀(world_x/world_y) 위치, 생존 여부, 가방 보유 여부와 애니메이션 정보를 들고 있음.
@@ -73,7 +81,8 @@ typedef struct {
     int alive;         // 플레이어 생존 여부.
     int has_backpack;  // 가방(G)을 획득했는지 여부
     PlayerFacing facing; // 현재 바라보는 방향
-    int anim_step;     // 이동 중 프레임 토글 (0/1)
+    PlayerAnimPhase anim_phase; // 현재 애니메이션 단계 (idle/step)
+    int anim_pixel_progress;    // 다음 프레임 전환까지 누적된 이동 픽셀 수
     int is_moving;     // 1이면 이동 중, 0이면 정지 상태
     double last_move_time; // 마지막으로 실제 이동한 시각(초)
     int shield_count;  // 한 번 살려주는 보호막 개수 (아이템 먹으면 증가, 충돌 시 소비)

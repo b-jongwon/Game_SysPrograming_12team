@@ -413,14 +413,21 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
 
     int variant = player->has_backpack ? PLAYER_VARIANT_BACKPACK : PLAYER_VARIANT_NORMAL;
     int frame = PLAYER_FRAME_STAND_A;
-    if (player->is_moving)
+    switch (player->anim_phase)
     {
-        frame = player->anim_step ? PLAYER_FRAME_STEP_B : PLAYER_FRAME_STEP_A;
-    }
-    else if (facing == PLAYER_FACING_UP)
-    {
-        int toggle = ((int)floor(elapsed_time)) % 2;
-        frame = toggle ? PLAYER_FRAME_STAND_B : PLAYER_FRAME_STAND_A;
+    case PLAYER_ANIM_PHASE_STEP_A:
+        frame = PLAYER_FRAME_STEP_A;
+        break;
+    case PLAYER_ANIM_PHASE_STEP_B:
+        frame = PLAYER_FRAME_STEP_B;
+        break;
+    case PLAYER_ANIM_PHASE_IDLE_B:
+        frame = PLAYER_FRAME_STAND_B;
+        break;
+    case PLAYER_ANIM_PHASE_IDLE_A:
+    default:
+        frame = PLAYER_FRAME_STAND_A;
+        break;
     }
 
     SDL_Texture *player_tex = g_player_textures[variant][facing][frame];

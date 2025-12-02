@@ -12,11 +12,13 @@ SDL2 기반 스테이지형 잠입 게임입니다. 터미널에 문자를 뿌�
 
 - SDL2
 - SDL2_image
+- alsa-utils (`aplay` 기반 WAV 출력)
+- espeak (교수님 발각 TTS 파이프라인)
 
 Ubuntu/Debian 계열이라면 다음 명령으로 설치할 수 있습니다.
 
 ```bash
-sudo apt install libsdl2-dev libsdl2-image-dev
+sudo apt install libsdl2-dev libsdl2-image-dev alsa-utils espeak
 ```
 
 ## 빌드 & 실행

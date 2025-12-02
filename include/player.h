@@ -32,4 +32,8 @@ int is_world_point_inside_player(const Player *player, int world_x, int world_y)
 // 타일 좌표의 중심이 플레이어 박스를 침범했는지 판정.
 int is_tile_center_inside_player(const Player *player, int tile_x, int tile_y);
 
+// 이동 거리당 애니메이션을 얼마나 빠르게 전환할지 제어하는 변수.
+// 기본값은 player.c에서 정의하며, 필요 시 게임 초기화 시점에서 값을 조정할 수 있다.
+extern int g_player_anim_stride_pixels;
+
 #endif // PLAYER_H

@@ -62,9 +62,15 @@ static SDL_Texture *g_tex_floor = NULL;
 static SDL_Texture *g_tex_wall = NULL;
 static SDL_Texture *g_tex_goal = NULL;
 
-static SDL_Texture *g_tex_professor = NULL; // P 교수님
-static SDL_Texture *g_tex_spinner = NULL;   // R (스피너)
-static SDL_Texture *g_tex_obstacle = NULL;  // X (일반 장애물)
+static SDL_Texture *g_tex_professor_1 = NULL; // 스테이지별 교수님
+static SDL_Texture *g_tex_professor_2 = NULL;
+static SDL_Texture *g_tex_professor_3 = NULL;
+static SDL_Texture *g_tex_professor_4 = NULL;
+static SDL_Texture *g_tex_professor_5 = NULL;
+static SDL_Texture *g_tex_professor_6 = NULL;
+
+static SDL_Texture *g_tex_spinner = NULL;  // R (스피너)
+static SDL_Texture *g_tex_obstacle = NULL; // X (일반 장애물)
 
 static SDL_Texture *g_tex_item_shield = NULL;  // 필드에 놓인 쉴드 아이템(I)
 static SDL_Texture *g_tex_item_scooter = NULL; // E-scooter 아이템(E)
@@ -313,7 +319,13 @@ int init_renderer(void)
     g_tex_goal = load_texture("assets/image/backpack64.png");
     g_tex_exit = load_texture("assets/image/exit.PNG");
 
-    g_tex_professor = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_1 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_2 = load_texture("assets/image/김진욱교수님테스트용.png");
+    g_tex_professor_3 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_4 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_5 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_6 = load_texture("assets/image/한명균교수님.png");
+
     g_tex_obstacle = load_texture("assets/image/professor64.png"); // X (일반)
     g_tex_spinner = load_texture("assets/image/professor64.png");  // R (스피너)
 
@@ -329,7 +341,7 @@ int init_renderer(void)
     if (!g_tex_projectile || !g_tex_item_shield || !g_tex_item_scooter || !g_tex_shield_on)
         return -1;
 
-    if (!g_tex_floor || !g_tex_wall || !g_tex_goal || !g_tex_professor || !g_tex_exit)
+    if (!g_tex_floor || !g_tex_wall || !g_tex_goal || !g_tex_professor_1 || !g_tex_exit)
     {
         return -1;
     }
@@ -365,7 +377,13 @@ void shutdown_renderer(void)
     destroy_texture(&g_tex_goal);
     destroy_texture(&g_tex_exit);
 
-    destroy_texture(&g_tex_professor);   // 교수
+    destroy_texture(&g_tex_professor_1); // 교수
+    destroy_texture(&g_tex_professor_2);
+    destroy_texture(&g_tex_professor_3);
+    destroy_texture(&g_tex_professor_4);
+    destroy_texture(&g_tex_professor_5);
+    destroy_texture(&g_tex_professor_6);
+
     destroy_texture(&g_tex_obstacle);    // 일반 장애물
     destroy_texture(&g_tex_spinner);     // 도는 장애물
     destroy_texture(&g_tex_item_shield); // 아이템 렌더링 셧다운
@@ -478,6 +496,32 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         int offset_y = compute_vertical_bounce_offset(elapsed_time);
         draw_texture_with_pixel_offset(g_tex_goal, stage->goal_x, stage->goal_y, 0, offset_y);
     }
+    SDL_Texture *current_prof_tex = g_tex_professor_1; // 기본값
+
+    switch (current_stage)
+    {
+    case 1:
+        current_prof_tex = g_tex_professor_1;
+        break;
+    case 2:
+        current_prof_tex = g_tex_professor_2;
+        break;
+    case 3:
+        current_prof_tex = g_tex_professor_3;
+        break;
+    case 4:
+        current_prof_tex = g_tex_professor_4;
+        break;
+    case 5:
+        current_prof_tex = g_tex_professor_5;
+        break;
+    case 6:
+        current_prof_tex = g_tex_professor_6;
+        break;
+    default:
+        current_prof_tex = g_tex_professor_1;
+        break;
+    }
 
     for (int i = 0; i < stage->num_obstacles; i++)
     {
@@ -490,7 +534,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         switch (o->kind)
         {
         case OBSTACLE_KIND_PROFESSOR:
-            tex_to_draw = g_tex_professor;
+            tex_to_draw = current_prof_tex;
             break;
         case OBSTACLE_KIND_SPINNER:
             tex_to_draw = g_tex_spinner;
@@ -639,12 +683,15 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
     char title[128];
     if (player->has_backpack)
     {
-        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs | Return to Exit",
-                 current_stage, total_stages, elapsed_time);
+
+        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs | Return to Exit | reamin ball: %d",
+                 current_stage, total_stages, elapsed_time, stage->remaining_ammo);
     }
     else
     {
-        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs", current_stage, total_stages, elapsed_time);
+
+        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs | reamin ball: %d",
+                 current_stage, total_stages, elapsed_time, stage->remaining_ammo);
     }
     SDL_SetWindowTitle(g_window, title);
 }

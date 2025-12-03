@@ -119,8 +119,21 @@ int main(void)
                     pthread_mutex_unlock(&g_stage_mutex);
                 }
             }
-
+           // 충돌 그룹 처리 lock 구간------------------ 
             pthread_mutex_lock(&g_stage_mutex);
+
+            if (check_trap_collision(&stage, &player))  /// 트랩 충돌 검사
+            {
+                printf("You stepped on a TRAP!\n");
+
+                stop_bgm();
+                play_obstacle_caught_sound(gameover_bgm_path);
+
+                stage_failed = 1;
+                
+                pthread_mutex_unlock(&g_stage_mutex); 
+                break; 
+            }
 
             if (check_collision(&stage, &player)) // 충돌 체크
             {
@@ -138,7 +151,7 @@ int main(void)
                 break;
             }
             pthread_mutex_unlock(&g_stage_mutex);
-
+            // 충돌 그룹 처리 lock 구간------------------
             int key = poll_input();
 
             if (key != -1)
@@ -209,9 +222,9 @@ int main(void)
                 }
                 case ITEM_TYPE_SUPPLY:
                 {
-                    // 상수에 정의된 값(5)만큼 증가
-                    stage.remaining_ammo += AMMO_REFILL_AMOUNT;
-                    printf("Ammo +%d! (Total: %d)\n", AMMO_REFILL_AMOUNT, stage.remaining_ammo);
+                    // 투사체 상수에 정의된 값(5)만큼 증가
+                    stage.remaining_ammo += SUPPLY_REFILL_AMOUNT;
+                    printf("Ammo +%d! (Total: %d)\n", SUPPLY_REFILL_AMOUNT, stage.remaining_ammo);
                     break;
                 }
                 default:

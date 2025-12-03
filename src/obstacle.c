@@ -377,6 +377,34 @@ static void *obstacle_thread_func(void *arg)
 }
 
 // ----------------------------------------------------------
+// 함정 충돌 체크 (메인 스레드에서 호출)
+// ----------------------------------------------------------
+int check_trap_collision(const Stage *stage, const Player *player)
+{
+    if (!stage || !player) return 0;
+
+    // 플레이어의 정중앙 좌표 계산
+    int center_x = player->world_x + SUBPIXELS_PER_TILE / 2;
+    int center_y = player->world_y + SUBPIXELS_PER_TILE / 2;
+
+    // 타일 좌표로 변환
+    int tile_x = center_x / SUBPIXELS_PER_TILE;
+    int tile_y = center_y / SUBPIXELS_PER_TILE;
+
+    // 맵 범위 밖이면 무시
+    if (tile_x < 0 || tile_x >= stage->width || tile_y < 0 || tile_y >= stage->height) {
+        return 0;
+    }
+
+    // 해당 타일이 'T'(Trap)인지 확인
+    if (stage->map[tile_y][tile_x] == 'T') {
+        return 1; // 밟았다!
+    }
+
+    return 0; // 안전하다
+}
+
+// ----------------------------------------------------------
 // start_obstacle_thread()
 // ----------------------------------------------------------
 // 장애물을 자동으로 움직이는 스레드 시작.

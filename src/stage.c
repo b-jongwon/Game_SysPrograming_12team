@@ -53,7 +53,7 @@ static const StageDifficulty kDifficultySettings[] = {
                               // ★속도 관련 숫자는 작으면 빠름.
     // Stage 1:                   // {플레이어 속도,일반 장애물 속도, 교수님 속도, 장애물 체력, 교수님 시야범위, 게임당 투사체 수)
     {0.11, 0.20, 0.35, 2, 5, 10}, // 구조체 순서대로 설정하면 됩니다.
-                                  // 발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 AMMO_REFILL_AMOUNT 수정 
+                                  // 발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 SUPPLY_REFILL_AMOUNT 수정 
     // Stage 2:
     {0.18, 0.25, 0.30, 3, 8, 3},
 

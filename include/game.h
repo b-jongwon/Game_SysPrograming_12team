@@ -21,7 +21,7 @@
 #define PLAYER_MOVE_STEP_SUBPIXELS 2
 
 #define CONSTANT_PROJECTILE_RANGE 7 // 투사체 사거리
-#define AMMO_REFILL_AMOUNT 5 //추가 되는 탄약 수
+#define SUPPLY_REFILL_AMOUNT 5 //추가 되는 탄약 수
 
 // 한 스테이지에서 허용하는 최대 장애물 개수.
 // - Stage.obstacles 배열의 크기.

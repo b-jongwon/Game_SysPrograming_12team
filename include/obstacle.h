@@ -39,4 +39,9 @@ void stop_obstacle_thread(void);
 //   단일 스레드 환경에서 테스트할 때 직접 호출하도록 "공개"해둔 함수.
 void move_obstacles(Stage *stage, double delta_time); // also exposed for single-threaded test
 
+
+
+int check_trap_collision(const Stage *stage, const Player *player); // 트랩 충돌 처리
+
+
 #endif // OBSTACLE_H

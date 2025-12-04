@@ -49,10 +49,10 @@ static int try_move_obstacle(Obstacle *o, Stage *stage, int delta_world_x, int d
 // ----------------------------------------------------------
 static void update_spinner(Obstacle *o, Stage *stage)
 {
-    // 1. 각도 증가 (속도 조절: 0.2 라디안씩 회전)
+    // 1. 각도 증가 (속도 조절: move_seppd 라디안씩 회전)
     // angle_index를 실수형 각도 누적값처럼 활용하거나, 별도 float 필드를 쓸 수도 있지만
     // 여기서는 간단히 angle_index를 각도로 환산한다고 가정.
-    double speed = 0.2;
+    double speed = o->move_speed; // stage.c에
     double current_angle = o->angle_index * speed;
 
     // 2. 새로운 위치 계산 (중심점 + 반지름 * 삼각비)

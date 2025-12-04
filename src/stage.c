@@ -46,28 +46,30 @@ typedef struct
     int obs_hp;                 // 장애물 체력
     int prof_sight;             // 교수님 시야 범위 (타일 수)
     int initial_ammo;           // 게임당 발사 가능 투사체 수
+    double spinner_speed;       // 회전 속도 클수록 빠름
+    int spinner_radius;         // 회전 반지름
 } StageDifficulty;
 
 static const StageDifficulty kDifficultySettings[] = {
-    {0.0, 0.0, 0.0, 0, 0, 0}, // 0번 인덱스 (사용 안 함)
-                              // ★속도 관련 숫자는 작으면 빠름.
-    // Stage 1:                   // {플레이어 속도,일반 장애물 속도, 교수님 속도, 장애물 체력, 교수님 시야범위, 게임당 투사체 수)
-    {0.11, 0.20, 0.35, 2, 5, 10}, // 구조체 순서대로 설정하면 됩니다.
-                                  // 발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 SUPPLY_REFILL_AMOUNT 수정 
+    {0.0, 0.0, 0.0, 0, 0, 0, 0.0, 0, }, // 0번 인덱스 (사용 안 함)
+                                         // ★속도 관련 숫자는 작으면 빠름 (회전속도 제외).
+    // Stage 1:                   // {플레이어 속도,일반 장애물 속도, 교수님 속도, 장애물 체력, 교수님 시야범위, 게임당 투사체 수, 스핀 속도, 스핀 반지름}
+    {0.20, 0.25, 0.35, 2, 8, 10, 0.05, 2}, // 구조체 순서대로 설정하면 됩니다.
+                                           // 발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 SUPPLY_REFILL_AMOUNT 수정
     // Stage 2:
-    {0.18, 0.25, 0.30, 3, 8, 3},
+    {0.14, 0.20, 0.20, 3, 8, 7, 0.15, 2},
 
     // Stage 3:
-    {0.16, 0.20, 0.22, 4, 12, 3},
+    {0.16, 0.20, 0.22, 4, 12, 7, 0.15, 3},
 
     // Stage 4:
-    {0.14, 0.15, 0.18, 5, 15, 3},
+    {0.14, 0.15, 0.18, 5, 15, 7, 0.15, 3},
 
     // Stage 5:
-    {0.12, 0.12, 0.12, 5, 20, 3},
+    {0.12, 0.12, 0.12, 5, 20, 7, 0.15, 3},
 
     // Stage 6
-    {0.12, 0.12, 0.12, 6, 25, 5}};
+    {0.12, 0.12, 0.12, 6, 25, 7, 0.15, 3}};
 
 int get_stage_count(void)
 {
@@ -235,7 +237,10 @@ int load_stage(Stage *stage, int stage_id)
                         o->kind = OBSTACLE_KIND_SPINNER;
                         o->center_world_x = x * SUBPIXELS_PER_TILE;
                         o->center_world_y = y * SUBPIXELS_PER_TILE;
-                        o->orbit_radius_world = 4 * SUBPIXELS_PER_TILE;
+                        // 반지름= 타일 수 * 타일당 픽셀
+                        o->orbit_radius_world = diff.spinner_radius * SUBPIXELS_PER_TILE;
+                        // 속도= Obstacle 구조체의 move_speed 변수를 회전 속도로 활용
+                        o->move_speed = diff.spinner_speed;
                         o->angle_index = 0;
                         o->world_x = o->center_world_x + o->orbit_radius_world;
                         o->world_y = o->center_world_y;

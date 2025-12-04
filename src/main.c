@@ -21,6 +21,10 @@ extern int check_collision(Stage *stage, Player *player);
 
 static const double kScooterDurationSec = 20.0;
 
+static const double kWalkSfxIntervalBaseSec = 0.45;    // 기본 걷기 사운드 재생 간격 (초)
+static const double kWalkSfxIntervalScooterSec = 0.25; // 스쿠터 사용 시 걷기 사운드 재생 간격 (초, 더 짧게)
+static double g_last_walk_sfx_time = 0.0;              // 마지막 걷기 사운드 재생 시간
+
 int main(void)
 {
     setup_signal_handlers();
@@ -63,6 +67,8 @@ int main(void)
 
         Player player;
         init_player(&player, &stage);
+
+        g_last_walk_sfx_time = 0.0; // 스테이지 시작 시 걷기 사운드 타이머 초기화
 
         set_obstacle_player_ref(&player);
 
@@ -112,11 +118,31 @@ int main(void)
 
             if (move_finished)
             {
-                int held = current_direction_key();
+                /*int held = current_direction_key();
                 if (held != -1)
                 {
                     pthread_mutex_lock(&g_stage_mutex);
                     move_player(&player, (char)held, &stage, elapsed);
+                    pthread_mutex_unlock(&g_stage_mutex);
+                }
+                    */
+
+                int held = current_direction_key();
+                if (held != -1)
+                {
+                    pthread_mutex_lock(&g_stage_mutex);
+                    // 🔥 3. 꾹 누르고 있을 때도 사운드 재생 체크
+                    double walk_interval = player.has_scooter ? kWalkSfxIntervalScooterSec : kWalkSfxIntervalBaseSec;
+                    if (elapsed - g_last_walk_sfx_time >= walk_interval)
+                    {
+                        move_player(&player, (char)held, &stage, elapsed);
+                        play_sfx_nonblocking(walking_sound_path); // 걷기 사운드 재생 (논블로킹)
+                        g_last_walk_sfx_time = elapsed;           // 마지막 재생 시간 업데이트
+                    }
+                    else
+                    {
+                        move_player(&player, (char)held, &stage, elapsed);
+                    }
                     pthread_mutex_unlock(&g_stage_mutex);
                 }
             }
@@ -181,14 +207,6 @@ int main(void)
                 // --- 🔥 투사체 발사 ---
                 if (key == 'k' || key == 'K' || key == ' ')
                 {
-                    /*
-                    pthread_mutex_lock(&g_stage_mutex);
-                    fire_projectile(&stage, &player);
-                    play_sfx_nonblocking(item_use_sound_path); // 투사체 발사 사운드 재생 (논블로킹)
-                    pthread_mutex_unlock(&g_stage_mutex);
-                    continue; // 이동 처리와 겹치지 않게 skip
-                    */
-
                     pthread_mutex_lock(&g_stage_mutex);
 
                     // 1. ✅ 투사체 잔여 개수 확인
@@ -212,7 +230,16 @@ int main(void)
                 pthread_mutex_lock(&g_stage_mutex);
                 move_player(&player, (char)key, &stage, elapsed);
 
-                play_sfx_nonblocking(walking_sound_path); // 걷기 사운드 재생 (논블로킹)
+                // play_sfx_nonblocking(walking_sound_path); // 걷기 사운드 재생 (논블로킹)
+
+                // pthread_mutex_unlock(&g_stage_mutex);
+
+                double walk_interval = player.has_scooter ? kWalkSfxIntervalScooterSec : kWalkSfxIntervalBaseSec;
+                if (elapsed - g_last_walk_sfx_time >= walk_interval)
+                {
+                    play_sfx_nonblocking(walking_sound_path); // 걷기 사운드 재생 (논블로킹)
+                    g_last_walk_sfx_time = elapsed;           // 마지막 재생 시간 업데이트
+                }
 
                 pthread_mutex_unlock(&g_stage_mutex);
             }

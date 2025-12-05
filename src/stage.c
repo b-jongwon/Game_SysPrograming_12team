@@ -88,7 +88,7 @@ static const StageDifficulty kDifficultySettings[] = {
     {0.12, 0.12, 0.3, 5, 8, 7, 0.15, 3},
 
     // Stage 6
-    {0.12, 0.12, 0.3, 6, 20, 30, 0.1, 3}};
+    {0.12, 0.12, 0.3, 6, 7, 30, 0.1, 3}};
 
 int get_stage_count(void)
 {

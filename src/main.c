@@ -156,7 +156,7 @@ int main(void)
                 if (check_trap_collision(&stage, &player) || check_collision(&stage, &player))
                 {
                     player.shield_count--; // 쉴드 1개 소모
-                    printf("Shield blocked collision! Remaining: (x%d)\n", player.shield_count);
+                    printf("쉴드로 방어 했습니다! 남은 쉴드: %d개\n", player.shield_count);
 
                     // 쉴드 사용 피드백 사운드 재생 (논블로킹)
                     play_sfx_nonblocking(item_use_sound_path);
@@ -168,7 +168,7 @@ int main(void)
 
             if (check_trap_collision(&stage, &player)) /// 트랩 충돌 검사
             {
-                printf("You stepped on a TRAP!\n");
+                printf("트랩을 밟았습니다!\n");
 
                 stop_bgm();
                 play_obstacle_caught_sound(gameover_bgm_path);
@@ -274,7 +274,7 @@ int main(void)
                 {
                 case ITEM_TYPE_SHIELD:
                     player.shield_count++; // 보호막 1개 획득
-                    printf("Shield acquired! (x%d)\n", player.shield_count);
+                    printf("방어막을 획득했습니다! \n장애물을 1번 막아주고 처리 할수 있습니다. \n현재보유: %d개\n", player.shield_count);
                     break;
                 case ITEM_TYPE_SCOOTER:
                 {
@@ -283,14 +283,14 @@ int main(void)
                     player.speed_multiplier = scooter_multiplier;
                     player.move_speed = player.base_move_speed * player.speed_multiplier;
                     player.scooter_expire_time = elapsed + kScooterDurationSec;
-                    printf("Scooter equipped! Speed multiplier: %.1fx\n", player.speed_multiplier);
+                    printf("스쿠터를 획득했습니다! 속도가 %.1f 배 빨라집니다. \n", player.speed_multiplier);
                     break;
                 }
                 case ITEM_TYPE_SUPPLY:
                 {
                     // 투사체 상수에 정의된 값(5)만큼 증가
                     stage.remaining_ammo += SUPPLY_REFILL_AMOUNT;
-                    printf("Ammo +%d! (Total: %d)\n", SUPPLY_REFILL_AMOUNT, stage.remaining_ammo);
+                    printf("야구공 +%d 증가! (현재 보유 야구공: %d개)\n", SUPPLY_REFILL_AMOUNT, stage.remaining_ammo);
                     break;
                 }
                 default:
@@ -305,7 +305,7 @@ int main(void)
                 player.speed_multiplier = 1.0;
                 player.move_speed = player.base_move_speed * player.speed_multiplier;
                 player.scooter_expire_time = 0.0;
-                printf("Scooter effect expired.\n");
+                printf("스쿠터 효과 끝.\n");
             }
 
             pthread_mutex_unlock(&g_stage_mutex);
@@ -344,7 +344,7 @@ int main(void)
 
         if (stage_failed)
         {
-            printf("You were caught at Stage %d! Game Over.\n", s);
+            printf("지금까지 출튀 한 횟수는 %d 번!  게임종료.\n", s);
             cleared_all = 0;
             break;
         }
@@ -353,7 +353,7 @@ int main(void)
         {
             play_sfx_nonblocking(next_level_sound_path); // 다음 레벨 전환 사운드 재생 (논블로킹)
 
-            printf("Stage %d Cleared!\n", s);
+            printf("스테이지 %d 출튀 성공!\n", s);
             fflush(stdout);
             sleep(1);
         }
@@ -362,27 +362,27 @@ int main(void)
     gettimeofday(&global_end, NULL);
     double total_time = get_elapsed_time(global_start, global_end);
 
-    printf("\n===== GAME RESULT =====\n");
-    printf("Total Playtime: %.3fs\n", total_time);
+    printf("\n===== 게임 결과 =====\n");
+    printf("전체 플레이 시간: %.3fs\n", total_time);
 
     double best_time = load_best_record();
     if (cleared_all && g_running)
     {
-        printf("You cleared all stages!\n");
+        printf("모든 스테이지 클리어!\n");
         if (best_time <= 0.0 || total_time < best_time)
         {
-            printf("New Record!\n");
+            printf("최고 기록!\n");
         }
         update_record_if_better(total_time);
     }
     else
     {
-        printf("You failed to clear all stages. Record unchanged.\n");
+        printf("스테이지 클리어 실패로 기록이 기록되지 않습니다..\n");
     }
 
     best_time = load_best_record();
-    printf("Best Record: %.3fs\n", best_time);
-    printf("Your Time : %.3fs\n", total_time);
+    printf("최고기록: %.3fs\n", best_time);
+    printf("이번 기록 : %.3fs\n", total_time);
 
     stop_bgm(); // 게임 종료 시 BGM 중지
 

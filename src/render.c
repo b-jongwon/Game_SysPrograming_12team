@@ -688,7 +688,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         draw_texture_scaled(g_tex_shield_on, player_world_x, player_world_y, 1.2);
     }
 
- /* SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(g_renderer, 40, 40, 40, 200);
     for (int y = 0; y < stage_height; ++y)
     {
@@ -702,7 +702,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         }
     }
     SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_NONE);
-*/  
+ 
 // 패턴 확인용 주석처리
     SDL_RenderPresent(g_renderer);
 

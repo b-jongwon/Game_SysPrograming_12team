@@ -2,40 +2,46 @@
 #include "../include/game.h"
 #include <stdio.h>
 
-
-
 void fire_projectile(Stage *stage, const Player *player)
 {
-    if (!stage || !player) return;
+    if (!stage || !player)
+        return;
 
     // ============================================================
     // 1. [심플함] 남은 탄약만 검사!
     // ============================================================
     // 화면에 몇 개가 있든 상관없음. 그냥 내 주머니에 총알이 있냐 없냐만 중요.
-    
-    if (stage->remaining_ammo <= 0) {
+
+    if (stage->remaining_ammo <= 0)
+    {
         // 탄약 없음 -> 발사 불가
-        return; 
+        return;
     }
 
     // ============================================================
     // 2. 빈 슬롯 찾기 (메모리 관리용)
     // ============================================================
     int slot_index = -1;
-    
+
     // 빈 자리(active==0) 찾기
-    for (int i = 0; i < stage->num_projectiles; i++) {
-        if (stage->projectiles[i].active == 0) {
+    for (int i = 0; i < stage->num_projectiles; i++)
+    {
+        if (stage->projectiles[i].active == 0)
+        {
             slot_index = i;
             break;
         }
     }
 
     // 빈 자리 없으면 배열 늘리기
-    if (slot_index == -1) {
-        if (stage->num_projectiles < MAX_PROJECTILES) {
+    if (slot_index == -1)
+    {
+        if (stage->num_projectiles < MAX_PROJECTILES)
+        {
             slot_index = stage->num_projectiles++;
-        } else {
+        }
+        else
+        {
             return; // 64발 슬롯이 꽉 참 (거의 일어날 일 없음)
         }
     }
@@ -43,18 +49,28 @@ void fire_projectile(Stage *stage, const Player *player)
     // ============================================================
     // 3. 발사 및 차감
     // ============================================================
-    
+
     // 탄약 1발 소모
     stage->remaining_ammo--;
     // printf("탕! 남은 탄약: %d\n", stage->remaining_ammo); // 디버깅용
 
     int dir_x = 0, dir_y = 0;
-    switch (player->facing) {
-        case PLAYER_FACING_UP:    dir_y = -1; break;
-        case PLAYER_FACING_DOWN:  dir_y = 1; break;
-        case PLAYER_FACING_LEFT:  dir_x = -1; break;
-        case PLAYER_FACING_RIGHT: dir_x = 1; break;
-        default: return; 
+    switch (player->facing)
+    {
+    case PLAYER_FACING_UP:
+        dir_y = -1;
+        break;
+    case PLAYER_FACING_DOWN:
+        dir_y = 1;
+        break;
+    case PLAYER_FACING_LEFT:
+        dir_x = -1;
+        break;
+    case PLAYER_FACING_RIGHT:
+        dir_x = 1;
+        break;
+    default:
+        return;
     }
 
     Projectile *p = &stage->projectiles[slot_index];
@@ -120,8 +136,8 @@ void move_projectiles(Stage *stage)
             Obstacle *o = &stage->obstacles[j];
             if (!o->active)
                 continue;
-            if (o->kind == OBSTACLE_KIND_PROFESSOR)
-                continue;
+            if (o->kind == OBSTACLE_KIND_PROFESSOR && stage->id != 6)
+                continue;  //6스테이지에서는 교수 맞추기 가능
 
             int obstacle_tile_x = o->world_x / SUBPIXELS_PER_TILE;
             int obstacle_tile_y = o->world_y / SUBPIXELS_PER_TILE;

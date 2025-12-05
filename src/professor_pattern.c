@@ -73,7 +73,7 @@ int pattern_stage_5(Stage *stage, Obstacle *prof, Player *player, double delta_t
    
     double t = fmod(prof->p_timer, CYCLE);
 
-    // 스쿠터/난이도 포함 “기본 러닝 속도”
+  
     double base_speed = player->base_move_speed * player->speed_multiplier;
 
     double factor;
@@ -90,20 +90,27 @@ int pattern_stage_5(Stage *stage, Obstacle *prof, Player *player, double delta_t
         if (u < 0.0) u = 0.0;
         if (u > 1.0) u = 1.0;
 
-        // MIN_FACTOR → 1.0 으로 서서히 증가
-        factor = MIN_FACTOR + (1.0 - MIN_FACTOR) * u;
+       
+        factor = MIN_FACTOR + (1.0 - MIN_FACTOR) * u;   // MIN_FACTOR → 1.0 으로 서서히 증가
     }
 
-    // 최종 적용 속도: (난이도/스쿠터 등 기본 속도) * (교수 디버프 계수) 
-    player->move_speed = base_speed * factor;
+   
+    player->move_speed = base_speed * factor;  // 최종 적용 속도: (난이도/스쿠터 등 기본 속도) * (교수 디버프 계수) 
 
     return 1; // 이동은 그대로 진행
 }
 
 
-int pattern_stage_6(Stage *stage, Obstacle *prof,  Player *player, double delta_time)
+int pattern_stage_6(Stage *stage, Obstacle *prof, Player *player, double dt)
 {
-    return 1;
+    // 1~5의 패턴을 모두 적용
+    int p1=pattern_stage_1(stage, prof, player, dt);
+    int p2=pattern_stage_2(stage, prof, player, dt);
+    int p3=pattern_stage_3(stage, prof, player, dt);
+    int p4=pattern_stage_4(stage, prof, player, dt);
+    int p5=pattern_stage_5(stage, prof, player, dt);
+
+    return (p1 && p2 && p3 && p4 && p5 );
 }
 
 static const PatternFunc kPatterns[] = {

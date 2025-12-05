@@ -51,11 +51,30 @@ typedef struct
 } StageDifficulty;
 
 static const StageDifficulty kDifficultySettings[] = {
-    {0.0, 0.0, 0.0, 0, 0, 0, 0.0, 0, }, // 0번 인덱스 (사용 안 함)
-                                         // ★속도 관련 숫자는 작으면 빠름 (회전속도 제외).
-    // Stage 1:                   // {플레이어 속도,일반 장애물 속도, 교수님 속도, 장애물 체력, 교수님 시야범위, 게임당 투사체 수, 스핀 속도, 스핀 반지름}
-    {0.20, 0.25, 0.35, 2, 8, 10, 0.05, 2}, // 구조체 순서대로 설정하면 됩니다.
-                                           // 발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 SUPPLY_REFILL_AMOUNT 수정
+    {
+        0.0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        0.0,
+        0,
+    }, // 0번 인덱스 (사용 안 함)
+
+    // ★속도 관련 숫자는 작으면 빠름 (회전속도 제외).
+    // Stage 1:
+    /* {
+       1. 플레이어 속도
+       2.일반 장애물 속도    구조체 순서대로 설정하면 됩니다.
+       3. 교수님 속도
+       4. 장애물 체력         발사체 사거리는 game.h 에서  CONSTANT_PROJECTILE_RANGE 수정. , 투사체 증가 갯수는 game.h 에서 SUPPLY_REFILL_AMOUNT 수정
+       5. 교수님 시야범위
+       6. 게임당 투사체 수
+       7. 스핀 속도
+       8. 스핀 반지름}*/
+    {0.20, 0.25, 0.35, 2, 8, 10, 0.05, 2},
+
     // Stage 2:
     {0.14, 0.20, 0.20, 3, 8, 7, 0.15, 2},
 
@@ -66,10 +85,10 @@ static const StageDifficulty kDifficultySettings[] = {
     {0.14, 0.15, 0.18, 5, 15, 7, 0.15, 3},
 
     // Stage 5:
-    {0.12, 0.12, 0.3, 5, 20, 7, 0.15, 3},
+    {0.12, 0.12, 0.3, 5, 8, 7, 0.15, 3},
 
     // Stage 6
-    {0.12, 0.12, 0.12, 6, 25, 7, 0.15, 3}};
+    {0.12, 0.12, 0.3, 6, 8, 30, 0.15, 3}};
 
 int get_stage_count(void)
 {
@@ -229,8 +248,15 @@ int load_stage(Stage *stage, int stage_id)
                         o->kind = OBSTACLE_KIND_PROFESSOR;
                         o->sight_range = diff.prof_sight;
                         o->move_speed = SUBPIXELS_PER_TILE / diff.prof_sec_per_tile;
-                        o->hp = 999;
                         o->alert = 0;
+                        if (stage_id == 6)
+                        {
+                            o->hp = 15; // 6 stage 보스 hp
+                        }
+                        else
+                        {
+                            o->hp = 999; // 나머지 스테이지 무적
+                        }
                     }
                     else if (c == 'R')
                     { // 스피너
@@ -245,29 +271,29 @@ int load_stage(Stage *stage, int stage_id)
                         o->world_x = o->center_world_x + o->orbit_radius_world;
                         o->world_y = o->center_world_y;
                     }
-                    else if (c == 'V') 
+                    else if (c == 'V')
                     {
                         o->kind = OBSTACLE_KIND_LINEAR;
                         o->type = 1; // 1 = 세로 이동 고정
                         o->move_speed = SUBPIXELS_PER_TILE / diff.obs_sec_per_tile;
                         o->hp = diff.obs_hp;
                     }
-                   
-                    else if (c == 'H') 
+
+                    else if (c == 'H')
                     {
                         o->kind = OBSTACLE_KIND_LINEAR;
                         o->type = 0; // 0 = 가로 이동 고정
                         o->move_speed = SUBPIXELS_PER_TILE / diff.obs_sec_per_tile;
                         o->hp = diff.obs_hp;
-                    }else if (c == 'B') 
-                    
+                    }
+                    else if (c == 'B')
+
                     {
                         o->kind = OBSTACLE_KIND_BREAKABLE_WALL;
                         o->move_speed = 0.0; // 움직임 없음
-                        o->hp = 3;           
+                        o->hp = 3;
                         o->dir = 0;
                     }
-                    
                 }
                 stage->map[y][x] = ' ';
             }

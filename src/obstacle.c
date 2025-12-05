@@ -33,10 +33,10 @@ static pthread_t g_thread;
 static int g_thread_running = 0;
 
 // [추가] 장애물 스레드가 플레이어 위치를 참고하기 위한 포인터
-static const Player *g_player_ref = NULL;
+static Player *g_player_ref = NULL;
 
 // [추가] 메인에서 플레이어 주소를 넘겨받는 함수 (obstacle.h에도 선언 필요)
-void set_obstacle_player_ref(const Player *p)
+void set_obstacle_player_ref( Player *p)
 {
     g_player_ref = p;
 }

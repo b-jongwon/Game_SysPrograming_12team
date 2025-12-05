@@ -138,7 +138,12 @@ typedef struct {
     int alert;               // 0: 평상시/순찰, 1: 플레이어를 발견하고 추격 중
     int sight_range;         // 시야 거리 (몇 칸까지 보는지)
 
-   
+    int p_state;       // 상태 관리 (예: 0=추격, 1=스킬준비, 2=패턴발동)
+    double p_timer;    // 패턴용 타이머 (예: 스킬 시전 시간, 쿨타임 등)
+    int p_counter;     // 카운터 (예: 분신 소환 횟수, 피격 횟수 등)
+    int p_misc;        // 여유분 변수 (필요하면 사용)
+    
+
 } Obstacle;
 
 // Stage 구조체

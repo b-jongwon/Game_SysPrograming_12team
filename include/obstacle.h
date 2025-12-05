@@ -17,7 +17,7 @@
 extern pthread_mutex_t g_stage_mutex;
 
 // [추가] 장애물 시스템에 플레이어 참조를 설정하는 함수
-void set_obstacle_player_ref(const Player *p);
+void set_obstacle_player_ref( Player *p);
 
 // 장애물 이동을 담당하는 스레드를 시작하는 함수.
 // - 인자 stage: 현재 플레이 중인 Stage의 포인터.

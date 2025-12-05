@@ -8,6 +8,7 @@
 #include "../include/game.h"           // Stage, Obstacle, MAX_X, MAX_Y 등
 #include "../include/signal_handler.h" // g_running 전역 플래그
 #include "../include/collision.h"
+#include "../include/professor_pattern.h"
 
 typedef struct
 {
@@ -143,7 +144,13 @@ static void update_professor(Obstacle *o, Stage *stage, double delta_time)
         if (dist <= o->sight_range)
             o->alert = 1;
     }
-
+// 2. 🔥 [연결] 패턴 함수 호출
+    // 패턴 함수가 0을 반환하면(스킬 시전 등) should_move가 0이 되어 이동을 건너뛰게 됨.
+    int should_move = update_professor_pattern(stage, o, g_player_ref, delta_time);
+    
+    
+if (should_move) // 패턴 함수가 1을 반환해야 이동 가능
+    {
     if (delta_time < 0.0)
         delta_time = 0.0;
     o->move_accumulator += o->move_speed * delta_time;
@@ -262,6 +269,7 @@ static void update_professor(Obstacle *o, Stage *stage, double delta_time)
             }
         }
     }
+}
 }
 // ----------------------------------------------------------
 // move_obstacles()

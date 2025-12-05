@@ -27,4 +27,7 @@ int pattern_stage_5(Stage *stage, Obstacle *prof,  Player *player, double delta_
 
 int pattern_stage_6(Stage *stage, Obstacle *prof,  Player *player, double delta_time);
 
+
+int update_professor_pattern(Stage *stage, Obstacle *prof,  Player *player, double delta_time);
+
 #endif 

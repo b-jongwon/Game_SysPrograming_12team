@@ -321,7 +321,8 @@ int init_renderer(void)
     g_tex_exit = load_texture("assets/image/exit.PNG");
 
     g_tex_professor_1 = load_texture("assets/image/한명균교수님.png");
-    g_tex_professor_2 = load_texture("assets/image/김진욱교수님테스트용.png");
+    // g_tex_professor_2 = load_texture("assets/image/김진욱교수님테스트용.png");
+    g_tex_professor_2 = load_texture("assets/image/이종택교수님.png");
     g_tex_professor_3 = load_texture("assets/image/한명균교수님.png");
     g_tex_professor_4 = load_texture("assets/image/한명균교수님.png");
     g_tex_professor_5 = load_texture("assets/image/한명균교수님.png");
@@ -491,8 +492,6 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         }
     }
 
-    
-
     if (!player->has_backpack)
     {
         int gx = stage->goal_x;
@@ -500,8 +499,8 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
 
         if (gx >= 0 && gy >= 0)
         {
-            int offset = (int)round(sin(elapsed_time*6.0) * 2);
-            SDL_Rect dst = {gx*TILE_SIZE, gy*TILE_SIZE + offset, TILE_SIZE, TILE_SIZE};
+            int offset = (int)round(sin(elapsed_time * 6.0) * 2);
+            SDL_Rect dst = {gx * TILE_SIZE, gy * TILE_SIZE + offset, TILE_SIZE, TILE_SIZE};
             SDL_RenderCopy(g_renderer, g_tex_goal, NULL, &dst);
         }
     }
@@ -513,7 +512,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
 
         if (fx >= 0 && fy >= 0)
         {
-            SDL_Rect dst = {fx*TILE_SIZE, fy*TILE_SIZE, TILE_SIZE, TILE_SIZE};
+            SDL_Rect dst = {fx * TILE_SIZE, fy * TILE_SIZE, TILE_SIZE, TILE_SIZE};
             SDL_RenderCopy(g_renderer, g_tex_exit, NULL, &dst);
         }
     }
@@ -688,7 +687,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         draw_texture_scaled(g_tex_shield_on, player_world_x, player_world_y, 1.2);
     }
 
-  SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(g_renderer, 40, 40, 40, 200);
     for (int y = 0; y < stage_height; ++y)
     {
@@ -702,8 +701,8 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         }
     }
     SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_NONE);
- 
-// 패턴 확인용 주석처리
+
+    // 패턴 확인용 주석처리
     SDL_RenderPresent(g_renderer);
 
     char title[128];

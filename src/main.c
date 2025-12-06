@@ -25,7 +25,7 @@ static const double kWalkSfxIntervalBaseSec = 0.45;    // 기본 걷기 사운�
 static const double kWalkSfxIntervalScooterSec = 0.25; // 스쿠터 사용 시 걷기 사운드 재생 간격 (초, 더 짧게)
 static double g_last_walk_sfx_time = 0.0;              // 마지막 걷기 사운드 재생 시간
 
-int main(void)
+int main(int argc, char *argv[])
 {
     signal(SIGCHLD, SIG_IGN);
     setup_signal_handlers();
@@ -52,16 +52,43 @@ int main(void)
 
     int cleared_all = 1;
 
+    const int available_stage_count = get_stage_count();
+    int start_stage_id = 1;
+    int end_stage_id = available_stage_count;
+    int stages_to_play = available_stage_count;
+    int playing_full_campaign = 1;
+
+    if (argc >= 2)
+    {
+        // 사용자가 명시적으로 플레이할 맵을 지정한 경우, 해당 맵 하나만 로드한다.
+        int requested_stage_id = find_stage_id_by_filename(argv[1]);
+        if (requested_stage_id < 0)
+        {
+            fprintf(stderr, "알 수 없는 맵 파일: %s\n", argv[1]);
+            fprintf(stderr, "assets/ 디렉토리에 존재하는 .map 파일명을 인자로 넘겨주세요.\n");
+            restore_input();
+            shutdown_renderer();
+            return 1;
+        }
+
+        start_stage_id = requested_stage_id;
+        end_stage_id = requested_stage_id;
+        stages_to_play = 1;
+        playing_full_campaign = 0;
+        printf("지정된 맵(%s)만 플레이합니다.\n", argv[1]);
+    }
+
     play_bgm(bgm_file_path, 1); // BGM 재생 시작 (Non-blocking)
 
-    const int total_stages = get_stage_count();
-
-    for (int s = 1; s <= total_stages && g_running; s++)
+    for (int stage_id = start_stage_id, stage_counter = 0;
+         stage_id <= end_stage_id && g_running;
+         stage_id++, stage_counter++)
     {
+        const int current_stage_display = stage_counter + 1;
         Stage stage;
-        if (load_stage(&stage, s) != 0)
+        if (load_stage(&stage, stage_id) != 0)
         {
-            fprintf(stderr, "Failed to load stage %d\n", s);
+            fprintf(stderr, "Failed to load stage %d\n", stage_id);
             stop_bgm(); // 오류 발생시 bgm 중지
             cleared_all = 0;
             break;
@@ -115,7 +142,7 @@ int main(void)
 
                 play_sfx_nonblocking(bag_acquire_sound_path); // 가방 획득 사운드 재생 (Non-blocking)
             }
-            render(&stage, &player, elapsed, s, total_stages);
+            render(&stage, &player, elapsed, current_stage_display, stages_to_play);
             pthread_mutex_unlock(&g_stage_mutex);
 
             if (move_finished)
@@ -345,7 +372,7 @@ int main(void)
 
         if (stage_failed)
         {
-            printf("지금까지 출튀 한 횟수는 %d 번!  게임종료.\n", s);
+            printf("지금까지 출튀 한 횟수는 %d 번!  게임종료.\n", current_stage_display);
             cleared_all = 0;
             break;
         }
@@ -354,7 +381,7 @@ int main(void)
         {
             play_sfx_nonblocking(next_level_sound_path); // 다음 레벨 전환 사운드 재생 (논블로킹)
 
-            printf("스테이지 %d 출튀 성공!\n", s);
+            printf("스테이지 %s 출튀 성공!\n", stage.name);
             fflush(stdout);
             sleep(1);
         }
@@ -369,12 +396,19 @@ int main(void)
     double best_time = load_best_record();
     if (cleared_all && g_running)
     {
-        printf("모든 스테이지 클리어!\n");
-        if (best_time <= 0.0 || total_time < best_time)
+        if (playing_full_campaign)
         {
-            printf("최고 기록!\n");
+            printf("모든 스테이지 클리어!\n");
+            if (best_time <= 0.0 || total_time < best_time)
+            {
+                printf("최고 기록!\n");
+            }
+            update_record_if_better(total_time);
         }
-        update_record_if_better(total_time);
+        else
+        {
+            printf("선택한 스테이지를 모두 클리어했습니다. 전체 기록은 갱신되지 않습니다.\n");
+        }
     }
     else
     {

@@ -26,4 +26,9 @@
 int load_stage(Stage *stage, int stage_id);
 int get_stage_count(void);
 
+// CLI 인자로 전달된 맵 파일명을 스테이지 ID로 역매핑한다.
+// - 인자가 "1f.map" 혹은 "assets/1f.map" 모두 허용한다.
+// - 일치하는 항목이 없으면 -1을 반환하여 호출자가 사용자 피드백을 줄 수 있도록 한다.
+int find_stage_id_by_filename(const char *filename);
+
 #endif // STAGE_H

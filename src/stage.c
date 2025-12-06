@@ -95,6 +95,48 @@ int get_stage_count(void)
     return (int)(sizeof(kStageFiles) / sizeof(kStageFiles[0]));
 }
 
+// CLI에서 전달 받은 파일명이 assets 디렉토리 접두사 포함 여부와 상관없이
+// 동일한 스테이지를 가리키는지 검사한다. 사용자 입력 자유도를 높여
+// 가독성을 유지하면서도 stage.c 내부의 스테이지 정의를 그대로 활용한다.
+static int is_matching_stage_filename(const char *arg, const char *candidate)
+{
+    if (!arg || !candidate)
+    {
+        return 0;
+    }
+
+    if (strcmp(arg, candidate) == 0)
+    {
+        return 1;
+    }
+
+    char prefixed[64];
+    snprintf(prefixed, sizeof(prefixed), "assets/%s", candidate);
+    return strcmp(arg, prefixed) == 0;
+}
+
+// 외부 모듈이 문자열 기반 맵 선택을 stage_id로 치환할 수 있도록 만든 헬퍼.
+// stage_id 로직을 stage.c 내부에 캡슐화해 main.c가 스테이지 테이블에
+// 직접 접근하지 않도록 한다.
+int find_stage_id_by_filename(const char *filename)
+{
+    if (!filename)
+    {
+        return -1;
+    }
+
+    const int stage_count = get_stage_count();
+    for (int i = 0; i < stage_count; ++i)
+    {
+        if (is_matching_stage_filename(filename, kStageFiles[i].filename))
+        {
+            return i + 1;
+        }
+    }
+
+    return -1;
+}
+
 // --------------------------------------------------------------
 // load_stage()
 // --------------------------------------------------------------

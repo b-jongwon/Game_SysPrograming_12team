@@ -2,31 +2,22 @@
 #include "../include/game.h"
 #include <stdio.h>
 
-void fire_projectile(Stage *stage, const Player *player)
+void fire_projectile(Stage *stage, const Player *player) // 플레이어 투사체 발사 함수
 {
     if (!stage || !player)
         return;
 
-    // ============================================================
-    // 1. [심플함] 남은 탄약만 검사!
-    // ============================================================
-    // 화면에 몇 개가 있든 상관없음. 그냥 내 주머니에 총알이 있냐 없냐만 중요.
-
-    if (stage->remaining_ammo <= 0)
+    if (stage->remaining_ammo <= 0) // 현재 남은 탄약검사
     {
-        // 탄약 없음 -> 발사 불가
         return;
     }
 
-    // ============================================================
-    // 2. 빈 슬롯 찾기 (메모리 관리용)
-    // ============================================================
-    int slot_index = -1;
-
-    // 빈 자리(active==0) 찾기
-    for (int i = 0; i < stage->num_projectiles; i++)
+    
+    int slot_index = -1; //
+    
+    for (int i = 0; i < stage->num_projectiles; i++)  // 동시 발사 
     {
-        if (stage->projectiles[i].active == 0)
+        if (stage->projectiles[i].active == 0) // Stage 구조체 생성될 때 
         {
             slot_index = i;
             break;
@@ -42,19 +33,13 @@ void fire_projectile(Stage *stage, const Player *player)
         }
         else
         {
-            return; // 64발 슬롯이 꽉 참 (거의 일어날 일 없음)
+            return; 
         }
     }
+  
+    stage->remaining_ammo--;    // 탄약 1발 소모
 
-    // ============================================================
-    // 3. 발사 및 차감
-    // ============================================================
-
-    // 탄약 1발 소모
-    stage->remaining_ammo--;
-    // printf("탕! 남은 탄약: %d\n", stage->remaining_ammo); // 디버깅용
-
-    int dir_x = 0, dir_y = 0;
+    int dir_x = 0, dir_y = 0;   //플레이어가 보는 방향으로 투사체 방향 계산.
     switch (player->facing)
     {
     case PLAYER_FACING_UP:
@@ -73,7 +58,7 @@ void fire_projectile(Stage *stage, const Player *player)
         return;
     }
 
-    Projectile *p = &stage->projectiles[slot_index];
+    Projectile *p = &stage->projectiles[slot_index]; //투사체 정보 초기화.
     p->world_x = player->world_x;
     p->world_y = player->world_y;
     p->dir_x = dir_x;
@@ -91,11 +76,11 @@ static int is_wall_cell(const Stage *stage, int tile_x, int tile_y)
 
     int stage_width = (stage->width > 0) ? stage->width : MAX_X;
     int stage_height = (stage->height > 0) ? stage->height : MAX_Y;
-    if (tile_x >= stage_width || tile_y >= stage_height)
+    if (tile_x >= stage_width || tile_y >= stage_height)   //맵 끝에 도달하는지 검사
         return 1;
 
     char cell = stage->map[tile_y][tile_x];
-    return is_tile_solid_char(cell);
+    return is_tile_solid_char(cell); // @이나 #으로 map파일에 돼있으면 벽 판정
 }
 
 void move_projectiles(Stage *stage)
@@ -103,8 +88,8 @@ void move_projectiles(Stage *stage)
     if (!stage)
         return;
 
-    const int step = SUBPIXELS_PER_TILE;
-    int max_range_pixels = CONSTANT_PROJECTILE_RANGE * SUBPIXELS_PER_TILE;
+    const int step = SUBPIXELS_PER_TILE; //1프레임당 이동거리 (1타일)
+    int max_range_pixels = CONSTANT_PROJECTILE_RANGE * SUBPIXELS_PER_TILE; // 최대 사거리
 
     for (int i = 0; i < stage->num_projectiles; i++)
     {
@@ -112,19 +97,21 @@ void move_projectiles(Stage *stage)
         if (!p->active)
             continue;
 
-        int next_world_x = p->world_x + p->dir_x * step;
+        int next_world_x = p->world_x + p->dir_x * step;  //현재 투사체 위치 임시 저장
         int next_world_y = p->world_y + p->dir_y * step;
 
         p->distance_traveled += step; // 이동 거리 누적
-        if (p->distance_traveled >= max_range_pixels)
+
+        if (p->distance_traveled >= max_range_pixels)  // 사거리 초과 -> 소멸
         {
-            p->active = 0; // 사거리 초과 -> 소멸
+            p->active = 0; 
             continue;
         }
 
         int next_tile_x = next_world_x / SUBPIXELS_PER_TILE;
         int next_tile_y = next_world_y / SUBPIXELS_PER_TILE;
-        if (is_wall_cell(stage, next_tile_x, next_tile_y))
+
+        if (is_wall_cell(stage, next_tile_x, next_tile_y)) //벽 충돌 검사
         {
             p->active = 0;
             continue;
@@ -136,17 +123,19 @@ void move_projectiles(Stage *stage)
             Obstacle *o = &stage->obstacles[j];
             if (!o->active)
                 continue;
-            if (o->kind == OBSTACLE_KIND_PROFESSOR && stage->id != 6)
-                continue;  //6스테이지에서는 교수 맞추기 가능
+
+            if (o->kind == OBSTACLE_KIND_PROFESSOR && stage->id != 6) // 6스테이지에서는 교수 맞추기 가능
+                continue;  
 
             int obstacle_tile_x = o->world_x / SUBPIXELS_PER_TILE;
             int obstacle_tile_y = o->world_y / SUBPIXELS_PER_TILE;
-            if (obstacle_tile_x == next_tile_x && obstacle_tile_y == next_tile_y)
+
+            if (obstacle_tile_x == next_tile_x && obstacle_tile_y == next_tile_y) //장애물 충돌 검사
             {
-                o->hp--;
+                o->hp--;   //hp 1 감소
                 if (o->hp <= 0)
                 {
-                    o->active = 0;
+                    o->active = 0;  //hp 없으면 죽음
                 }
                 p->active = 0;
                 break;

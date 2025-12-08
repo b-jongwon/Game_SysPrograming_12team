@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef int (*PatternFunc)(Stage *, Obstacle *, Player *, double);
 
@@ -33,8 +34,27 @@ int pattern_stage_1f(Stage *stage, Obstacle *prof, Player *player, double delta_
 
     const double PROF_BOOST_FACTOR = 1.0;
 
+    // 🚨 2단계 발각 사운드 파일 경로
+    const char *PROF_LV6_SFX_PATH = "bgm/Professor_lv2.wav";
+
     // -------------------------------------------------------------
-    // 2. 시야 차단/혼란 로직 (발견 즉시)
+    // 2. 발각 사운드 재생 로직 (첫 발견 시 1회 실행)
+    // -------------------------------------------------------------
+    if (prof->alert && prof->p_timer == 0.0)
+    {
+        play_sfx_nonblocking(PROF_LV6_SFX_PATH);
+
+        // p_timer를 0.1로 설정하여 다음 프레임에 중복 실행을 방지합니다.
+        prof->p_timer = 0.1;
+    }
+    else if (!prof->alert)
+    {
+        // 미발견 상태로 돌아가면 타이머를 0으로 리셋합니다.
+        prof->p_timer = 0.0;
+    }
+
+    // -------------------------------------------------------------
+    // 3. 시야 차단/혼란 로직 (발견 즉시)
     // -------------------------------------------------------------
 
     if (prof->alert)
@@ -216,6 +236,28 @@ int pattern_stage_4f(Stage *stage, Obstacle *prof, Player *player, double delta_
 
 int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double dt)
 {
+    if (!prof)
+        return 1;
+
+    // 🚨 6단계 발각 사운드 파일 경로
+    const char *PROF_LV6_SFX_PATH = "bgm/Professor_lv6.wav";
+
+    // -------------------------------------------------------------
+    // 1. 발각 사운드 재생 로직 (첫 발견 시 1회 실행)
+    // -------------------------------------------------------------
+    if (prof->alert && prof->p_timer == 0.0)
+    {
+        play_sfx_nonblocking(PROF_LV6_SFX_PATH);
+
+        // p_timer를 0.1로 설정하여 다음 프레임에 중복 실행을 방지합니다.
+        prof->p_timer = 0.1;
+    }
+    else if (!prof->alert)
+    {
+        // 미발견 상태로 돌아가면 타이머를 0으로 리셋합니다.
+        prof->p_timer = 0.0;
+    }
+
     // 1~5의 패턴을 모두 적용
     int p1 = pattern_stage_b1(stage, prof, player, dt);
     int p2 = pattern_stage_1f(stage, prof, player, dt);

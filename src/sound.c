@@ -557,6 +557,7 @@ static void preload_known_sounds(void)
         "bgm/B1_SkillA.wav",
         "bgm/B1_SkillB.wav",
         "bgm/Professor_lv2.wav",
+        "bgm/Professor_lv5.wav",
         "bgm/Professor_lv6.wav"
     };
 

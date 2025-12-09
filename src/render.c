@@ -568,7 +568,7 @@ int init_renderer(void)
     // g_tex_professor_2 = load_texture("assets/image/김진욱교수님테스트용.png");
     g_tex_professor_2 = load_texture("assets/image/이종택교수님.png");
     g_tex_professor_3 = load_texture("assets/image/한명균교수님.png");
-    g_tex_professor_4 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_4 = load_texture("assets/image/김명옥교수님.png");
     g_tex_professor_5 = load_texture("assets/image/한명균교수님.png");
     g_tex_professor_6 = load_texture("assets/image/한명균교수님.png");
 

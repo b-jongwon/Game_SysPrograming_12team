@@ -24,8 +24,9 @@ static const double kB1SkillBDuration = 2.0;
 static const double kB1SkillACloneLifetime = 6.0;
 static const double kB1SkillBCloneLifetime = 2.0;
 static const int kB1ClonesPerCast = 16;
-static const char *kB1SkillASfx = "bgm/B1_SkillA.wav";
-static const char *kB1SkillBSfx = "bgm/B1_SkillB.wav";
+static const char *kB1ContactSfx = "bgm/Professor_b1_contact.wav";
+static const char *kB1SkillASfx = "bgm/Professor_b1_illusion.wav";
+static const char *kB1SkillBSfx = "bgm/Professor_b1_2power2.wav";
 
 static void clear_professor_clones(Stage *stage)
 {
@@ -283,10 +284,17 @@ int pattern_stage_b1(Stage *stage, Obstacle *prof, Player *player, double delta_
         }
         prof->p_state = B1_STATE_IDLE;
         prof->p_timer = 0.0;
+        prof->p_misc = 0;
         return 0; // 가방 획득 전에는 움직임 금지
     }
 
     prof->alert = 1;
+
+    if (!prof->p_misc)
+    {
+        play_sfx_nonblocking(kB1ContactSfx);
+        prof->p_misc = 1;
+    }
 
     if (prof->p_state == B1_STATE_IDLE)
     {

@@ -80,7 +80,7 @@ static int is_wall_cell(const Stage *stage, int tile_x, int tile_y)
         return 1;
 
     char cell = stage->map[tile_y][tile_x];
-    return is_tile_opaque_char(cell); // @이나 #으로 map파일에 돼있으면 벽 판정
+    return is_tile_impassable_char(cell); // @,#,w,W,m,M,l,L은 물리적으로 막힘
 }
 
 void move_projectiles(Stage *stage)

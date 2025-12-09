@@ -164,4 +164,20 @@ static inline int is_tile_opaque_char(char cell)
     return (cell == '#' || cell == '@');
 }
 
+static inline int is_tile_impassable_char(char cell)
+{
+    switch (cell)
+    {
+    case 'w':
+    case 'W':
+    case 'm':
+    case 'M':
+    case 'l':
+    case 'L':
+        return 1;
+    default:
+        return is_tile_opaque_char(cell);
+    }
+}
+
 #endif // GAME_H

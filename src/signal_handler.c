@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <signal.h>
 #include <stddef.h>
 #include "../include/signal_handler.h"

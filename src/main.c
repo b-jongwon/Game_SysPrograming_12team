@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #include <SDL2/SDL.h>
 #include <pthread.h>
 #include <stdio.h>

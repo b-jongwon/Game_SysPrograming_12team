@@ -583,6 +583,19 @@ int pattern_stage_2f(Stage *stage, Obstacle *prof, Player *player, double delta_
     if (!prof || !player || !stage)
         return 1;
 
+ const char *PROF_LV3_SFX_PATH = "bgm/Professor_lv3.wav";
+    if (prof->alert && prof->p_timer == 0.0)
+    {
+        play_sfx_nonblocking(PROF_LV3_SFX_PATH);
+
+        // p_timer를 0.1로 설정하여 다음 프레임에 중복 실행을 방지합니다.
+        prof->p_timer = 0.1;
+    }
+    else if (!prof->alert)
+    {
+        // 미발견 상태로 돌아가면 타이머를 0으로 리셋합니다.
+        prof->p_timer = 0.0;
+    }
     if (delta_time < 0.0)
         delta_time = 0.0;
     prof->p_timer += delta_time; // 타이머 업데이트
@@ -657,19 +670,7 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
     {
         return 1;
     }
-    const char *PROF_LV4_SFX_PATH = "bgm/Professor_lv4.wav";
-    if (prof->alert && prof->p_timer == 0.0)
-    {
-        play_sfx_nonblocking(PROF_LV4_SFX_PATH);
-
-        // p_timer를 0.1로 설정하여 다음 프레임에 중복 실행을 방지합니다.
-        prof->p_timer = 0.1;
-    }
-    else if (!prof->alert)
-    {
-        // 미발견 상태로 돌아가면 타이머를 0으로 리셋합니다.
-        prof->p_timer = 0.0;
-    }
+   
     if (!prof->alert)
     {
         prof->p_state = STAGE3_STATE_WAIT;

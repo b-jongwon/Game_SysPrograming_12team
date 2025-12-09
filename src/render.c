@@ -566,15 +566,9 @@ int init_renderer(void)
 
     g_tex_professor_1 = load_texture("assets/image/김명석교수님.png");
     g_tex_professor_2 = load_texture("assets/image/이종택교수님.png");
-<<<<<<< HEAD
-    g_tex_professor_3 = load_texture("assets/image/한명균교수님.png");
-    g_tex_professor_4 = load_texture("assets/image/김명옥교수님.png");
-    g_tex_professor_5 = load_texture("assets/image/한명균교수님.png");
-=======
     g_tex_professor_3 = load_texture("assets/image/김진욱교수님.png");
-    g_tex_professor_4 = load_texture("assets/image/한명균교수님.png");
+    g_tex_professor_4 = load_texture("assets/image/김명옥교수님.png");
     g_tex_professor_5 = load_texture("assets/image/김정근교수님.png");
->>>>>>> origin/main
     g_tex_professor_6 = load_texture("assets/image/한명균교수님.png");
 
     g_tex_obstacle = load_texture("assets/image/professor64.png"); // X (일반)

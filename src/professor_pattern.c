@@ -37,18 +37,20 @@ enum
     STAGE3_STATE_SWAP = 2
 };
 
-static const double kStage3BurstInterval = 2.5;
 static const double kStage3ShotSpacing = 0.3;
 static const int kStage3ShotsPerBurst = 5;
 static const double kStage3BulletSpeed = 6.0;
 static const double kStage3BulletLifetime = 4.0;
-static const double kStage3SwapWindup = 0.9;
+static const double kStage3Skill1Cooldown = 3.0;
+static const double kStage3Skill2Cooldown = 8.0;
 static const char *kStage3Skill1Sfx = "bgm/Professor_3b_TTTTT.wav";
 static const char *kStage3Skill2Sfx = "bgm/Professor_3b_astest.wav";
 static const char *kStage3ClearSfx = "bgm/Professor_3b_clear.wav";
 static const char *kStage3Skill1Fallback = "bgm/Professor_f3_TTTTT.wav";
 static const char *kStage3Skill2Fallback = "bgm/Professor_f3_astest.wav";
 static const char *kStage3ClearFallback = "bgm/Professor_f3_clear.wav";
+static const int kStage3SoundPlayedFlag = 1 << 30;
+static const int kStage3MiscTimerMask = (1 << 30) - 1;
 
 static void clear_professor_clones(Stage *stage)
 {
@@ -713,13 +715,8 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
     {
         return 1;
     }
-<<<<<<< HEAD
-   
-    if (!prof->alert)
-=======
 
     if (!player->has_backpack)
->>>>>>> 35cded2 (feat: 김명옥교수님 패턴 구현)
     {
         prof->alert = 0;
         prof->p_state = STAGE3_STATE_WAIT;
@@ -734,21 +731,23 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
         prof->alert = 1;
     }
 
-    if (!prof->p_misc)
-    {
-        const char *clear_sfx = resolve_professor_sfx(kStage3ClearSfx, kStage3ClearFallback);
-        play_sfx_nonblocking(clear_sfx);
-        prof->p_misc = 1;
-    }
-
     if (delta_time < 0.0)
     {
         delta_time = 0.0;
     }
 
-    if (prof->p_state != STAGE3_STATE_WAIT &&
-        prof->p_state != STAGE3_STATE_FIRING &&
-        prof->p_state != STAGE3_STATE_SWAP)
+    int misc_flags = prof->p_misc;
+    int sound_flag = misc_flags & kStage3SoundPlayedFlag;
+    int swap_timer_ms = misc_flags & kStage3MiscTimerMask;
+
+    if (!sound_flag)
+    {
+        const char *clear_sfx = resolve_professor_sfx(kStage3ClearSfx, kStage3ClearFallback);
+        play_sfx_nonblocking(clear_sfx);
+        sound_flag = kStage3SoundPlayedFlag;
+    }
+
+    if (prof->p_state != STAGE3_STATE_WAIT && prof->p_state != STAGE3_STATE_FIRING)
     {
         prof->p_state = STAGE3_STATE_WAIT;
         prof->p_timer = 0.0;
@@ -759,7 +758,7 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
     {
     case STAGE3_STATE_WAIT:
         prof->p_timer += delta_time;
-        if (prof->p_timer >= kStage3BurstInterval)
+        if (prof->p_timer >= kStage3Skill1Cooldown)
         {
             prof->p_timer = 0.0;
             prof->p_counter = 0;
@@ -767,7 +766,7 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
             const char *skill1_sfx = resolve_professor_sfx(kStage3Skill1Sfx, kStage3Skill1Fallback);
             play_sfx_nonblocking(skill1_sfx);
         }
-        return 1;
+        break;
 
     case STAGE3_STATE_FIRING:
         prof->p_timer -= delta_time;
@@ -779,29 +778,33 @@ int pattern_stage_3f(Stage *stage, Obstacle *prof, Player *player, double delta_
         }
         if (prof->p_counter >= kStage3ShotsPerBurst)
         {
-            prof->p_state = STAGE3_STATE_SWAP;
-            prof->p_timer = 0.0;
-        }
-        return 0;
-
-    case STAGE3_STATE_SWAP:
-        prof->p_timer += delta_time;
-        if (prof->p_timer >= kStage3SwapWindup)
-        {
-            const char *skill2_sfx = resolve_professor_sfx(kStage3Skill2Sfx, kStage3Skill2Fallback);
-            play_sfx_nonblocking(skill2_sfx);
-            swap_professor_with_player(prof, player);
             prof->p_state = STAGE3_STATE_WAIT;
             prof->p_timer = 0.0;
         }
-        return 0;
+        break;
 
     default:
         prof->p_state = STAGE3_STATE_WAIT;
         prof->p_timer = 0.0;
         prof->p_counter = 0;
-        return 1;
+        break;
     }
+
+    if (delta_time > 0.0)
+    {
+        swap_timer_ms += (int)lround(delta_time * 1000.0);
+        const int swap_cooldown_ms = (int)lround(kStage3Skill2Cooldown * 1000.0);
+        if (swap_timer_ms >= swap_cooldown_ms)
+        {
+            swap_timer_ms = 0;
+            const char *skill2_sfx = resolve_professor_sfx(kStage3Skill2Sfx, kStage3Skill2Fallback);
+            play_sfx_nonblocking(skill2_sfx);
+            swap_professor_with_player(prof, player);
+        }
+    }
+
+    prof->p_misc = sound_flag | (swap_timer_ms & kStage3MiscTimerMask);
+    return (prof->p_state == STAGE3_STATE_WAIT) ? 1 : 0;
 }
 
 /*

@@ -363,19 +363,17 @@ static GameplayOutcome run_campaign(int start_stage_id,
             }
 
             pthread_mutex_lock(&g_stage_mutex);
-            if (player.shield_count > 0)
+            int trap_triggered = check_trap_collision(&stage, &player);
+            if (trap_triggered && player.shield_count > 0)
             {
-                if (check_trap_collision(&stage, &player) || check_collision(&stage, &player))
-                {
-                    player.shield_count--;
-                    printf("쉴드로 방어 했습니다! 남은 쉴드: %d개\n", player.shield_count);
-                    play_sfx_nonblocking(sounds->item_use_sound_path);
-                    pthread_mutex_unlock(&g_stage_mutex);
-                    continue;
-                }
+                player.shield_count--;
+                printf("쉴드로 방어 했습니다! 남은 쉴드: %d개\n", player.shield_count);
+                play_sfx_nonblocking(sounds->item_use_sound_path);
+                pthread_mutex_unlock(&g_stage_mutex);
+                continue;
             }
 
-            if (check_trap_collision(&stage, &player))
+            if (trap_triggered)
             {
                 printf("트랩을 밟았습니다!\n");
                 stop_bgm();

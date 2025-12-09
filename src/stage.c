@@ -63,8 +63,8 @@ static const StageDifficulty kDifficultySettings[] = {
     // Stage 3:
     {0.16, 0.20, 0.22, 4, 12, 7, 0.15, 3},
 
-    // Stage 4:
-    {0.14, 0.15, 0.18, 5, 15, 7, 0.15, 3},
+    // Stage 4 (3F): align movement speeds with Stage B1
+    {0.20, 0.25, 0.35, 5, 15, 7, 0.15, 3},
 
     // Stage 5:
     {0.12, 0.20, 0.3, 3, 5, 5, 0.15, 3},

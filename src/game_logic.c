@@ -43,24 +43,8 @@ int check_collision(Stage *stage, Player *player) // 장애물 충돌 조건  re
 
         // 교수 충돌 (Stage 6 보스전 포함)
 
-        if (o->kind == OBSTACLE_KIND_PROFESSOR) 
+        if (o->kind == OBSTACLE_KIND_PROFESSOR)
         {
-
-            // Stage 6 : 쉴드 있어도 무조건 즉사 (보스전)
-            if (stage->id == 6)
-            {
-                return 1; // 무조건 사망
-            }
-
-            // Stage 1~5 : 쉴드 있으면 방어 + 교수 제거
-
-            if (player->shield_count > 0)
-            {
-                player->shield_count--;
-                o->active = 0; // 교수 제거
-                return 0;      // 플레이어 생존
-            }
-
             return 1;
         }
 

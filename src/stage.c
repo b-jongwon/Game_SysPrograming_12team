@@ -142,6 +142,42 @@ static void load_render_overlay(Stage *stage, const char *stage_filename)  // ì‹
     fclose(render_fp);
 }
 
+static void cache_passable_tiles(Stage *stage)
+{
+    if (!stage)
+    {
+        return;
+    }
+
+    stage->num_passable_tiles = 0;
+    int width = stage->width;
+    int height = stage->height;
+    if (width <= 0)
+    {
+        width = MAX_X;
+    }
+    if (height <= 0)
+    {
+        height = MAX_Y;
+    }
+
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            if (stage->map[y][x] == ' ')
+            {
+                if (stage->num_passable_tiles < MAX_PASSABLE_TILES)
+                {
+                    stage->passable_tiles[stage->num_passable_tiles].x = (short)x;
+                    stage->passable_tiles[stage->num_passable_tiles].y = (short)y;
+                    stage->num_passable_tiles++;
+                }
+            }
+        }
+    }
+}
+
 int get_stage_count(void)
 {
     return (int)(sizeof(kStageFiles) / sizeof(kStageFiles[0]));
@@ -424,5 +460,6 @@ int load_stage(Stage *stage, int stage_id)
     fclose(fp);
 
     load_render_overlay(stage, info->filename);
+    cache_passable_tiles(stage);
     return 0;
 }

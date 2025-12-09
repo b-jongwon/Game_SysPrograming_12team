@@ -27,12 +27,6 @@ static const int kB1ClonesPerCast = 16;
 static const char *kB1SkillASfx = "bgm/B1_SkillA.wav";
 static const char *kB1SkillBSfx = "bgm/B1_SkillB.wav";
 
-typedef struct
-{
-    int x;
-    int y;
-} TileCoord;
-
 static void clear_professor_clones(Stage *stage)
 {
     if (!stage)
@@ -198,52 +192,55 @@ static int spawn_professor_clones(Stage *stage, const Player *player, const Obst
         return 0;
     }
 
-    const int stage_width = (stage->width > 0) ? stage->width : MAX_X;
-    const int stage_height = (stage->height > 0) ? stage->height : MAX_Y;
-
-    TileCoord candidates[MAX_X * MAX_Y];
-    int candidate_count = 0;
-
-    for (int y = 0; y < stage_height; ++y)
+    if (stage->num_passable_tiles <= 0)
     {
-        for (int x = 0; x < stage_width; ++x)
+        return 0;
+    }
+
+    short candidate_indices[MAX_PASSABLE_TILES];
+    int available = 0;
+
+    for (int i = 0; i < stage->num_passable_tiles; ++i)
+    {
+        int x = stage->passable_tiles[i].x;
+        int y = stage->passable_tiles[i].y;
+
+        if (tile_overlaps_player(player, x, y))
         {
-            if (stage->map[y][x] != ' ')
-            {
-                continue; // 공백 공간만 허용
-            }
-            if (tile_overlaps_player(player, x, y))
-            {
-                continue;
-            }
-            if (tile_has_obstacle(stage, x, y))
-            {
-                continue;
-            }
-            if (tile_has_item(stage, x, y))
-            {
-                continue;
-            }
-            if (tile_has_professor_clone(stage, x, y))
-            {
-                continue;
-            }
-            candidates[candidate_count++] = (TileCoord){x, y};
+            continue;
+        }
+        if (tile_has_obstacle(stage, x, y))
+        {
+            continue;
+        }
+        if (tile_has_item(stage, x, y))
+        {
+            continue;
+        }
+        if (tile_has_professor_clone(stage, x, y))
+        {
+            continue;
+        }
+
+        candidate_indices[available++] = (short)i;
+        if (available >= MAX_PASSABLE_TILES)
+        {
+            break;
         }
     }
 
-    int available = candidate_count;
     int created = 0;
     while (created < desired_count && available > 0)
     {
         int pick = rand() % available;
-        TileCoord chosen = candidates[pick];
+        int index = candidate_indices[pick];
+        TileCoord chosen = stage->passable_tiles[index];
         if (add_professor_clone(stage, chosen.x, chosen.y, ttl))
         {
             created++;
         }
 
-        candidates[pick] = candidates[available - 1];
+        candidate_indices[pick] = candidate_indices[available - 1];
         available--;
     }
 

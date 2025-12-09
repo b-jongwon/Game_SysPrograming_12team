@@ -843,34 +843,33 @@ static void render_hud(const Stage *stage, const Player *player, double elapsed_
 
     line_y += ammo_line_height + 8;
 
-    SDL_Texture *scooter_icon = g_tex_item_scooter ? g_tex_item_scooter : g_tex_projectile;
-    SDL_Rect scooter_rect = {HUD_MARGIN, line_y, 18, 18};
-    if (scooter_icon)
+    if (player->has_scooter)
     {
-        SDL_RenderCopy(g_renderer, scooter_icon, NULL, &scooter_rect);
-    }
-    else
-    {
-        SDL_RenderFillRect(g_renderer, &scooter_rect);
-    }
+        SDL_Texture *scooter_icon = g_tex_item_scooter ? g_tex_item_scooter : g_tex_projectile;
+        SDL_Rect scooter_rect = {HUD_MARGIN, line_y, 18, 18};
+        if (scooter_icon)
+        {
+            SDL_RenderCopy(g_renderer, scooter_icon, NULL, &scooter_rect);
+        }
+        else
+        {
+            SDL_RenderFillRect(g_renderer, &scooter_rect);
+        }
 
-    double scooter_remaining = player->has_scooter ? (player->scooter_expire_time - elapsed_time) : 0.0;
-    if (scooter_remaining < 0.0)
-    {
-        scooter_remaining = 0.0;
-    }
+        double scooter_remaining = player->scooter_expire_time - elapsed_time;
+        if (scooter_remaining < 0.0)
+        {
+            scooter_remaining = 0.0;
+        }
 
-    int scooter_total_seconds = (int)(scooter_remaining + 0.5);
-    if (!player->has_scooter)
-    {
-        scooter_total_seconds = 0;
-    }
-    int scooter_minutes = scooter_total_seconds / 60;
-    int scooter_seconds = scooter_total_seconds % 60;
+        int scooter_total_seconds = (int)(scooter_remaining + 0.5);
+        int scooter_minutes = scooter_total_seconds / 60;
+        int scooter_seconds = scooter_total_seconds % 60;
 
-    char scooter_text[32];
-    snprintf(scooter_text, sizeof(scooter_text), ": %02d:%02d", scooter_minutes, scooter_seconds);
-    draw_hud_text(scooter_text, scooter_rect.x + scooter_rect.w + 8, line_y);
+        char scooter_text[32];
+        snprintf(scooter_text, sizeof(scooter_text), ": %02d:%02d", scooter_minutes, scooter_seconds);
+        draw_hud_text(scooter_text, scooter_rect.x + scooter_rect.w + 8, line_y);
+    }
 
     SDL_SetRenderDrawColor(g_renderer, 15, 15, 15, 255);
 }
@@ -1211,18 +1210,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
     // 패턴 확인용 주석처리
     SDL_RenderPresent(g_renderer);
 
-    char title[128];
-    if (player->has_backpack)
-    {
-
-        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs | Return to Exit | reamin ball: %d",
-                 current_stage, total_stages, elapsed_time, stage->remaining_ammo);
-    }
-    else
-    {
-
-        snprintf(title, sizeof(title), "Stage %d/%d | Time %.2fs | remain ball: %d",
-                 current_stage, total_stages, elapsed_time, stage->remaining_ammo);
-    }
-    SDL_SetWindowTitle(g_window, title);
+    (void)current_stage;
+    (void)total_stages;
+    (void)elapsed_time;
 }

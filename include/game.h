@@ -12,6 +12,8 @@
 #define MAX_OBSTACLES 64             // 한 스테이지에서 허용하는 최대 장애물 개수.
 #define MAX_ITEMS 32                 // 한 스테이지에 배치 가능한 최대 아이템 개수
 #define MAX_PROJECTILES 64           // 한 스테이지에서 동시에 존재할 수 있는 최대 투사체 개수
+#define MAX_PROFESSOR_CLONES 48      // 교수 패턴에서 동시에 관리할 수 있는 최대 분신 수
+#define MAX_PASSABLE_TILES (MAX_X * MAX_Y)
 #define MAX_PROFESSOR_CLONES 48      // 교수 패턴에서 동시에 관리할 수 있는 분신 수
 
 // 아이템 종류
@@ -130,6 +132,12 @@ typedef struct
     int active;
 } ProfessorClone;
 
+typedef struct
+{
+    short x;
+    short y;
+} TileCoord;
+
 // Stage 구조체
 // - 한 스테이지에 대한 거의 모든 정보를 담는 구조체.
 // - 스테이지 ID, 이름, 맵 데이터, 시작/목표 위치, 장애물 목록 등을 포함.
@@ -158,6 +166,9 @@ typedef struct
 
     int num_professor_clones;                     // 교수 분신 수 (활성 상태)
     ProfessorClone professor_clones[MAX_PROFESSOR_CLONES]; // 교수 분신 정보
+
+    int num_passable_tiles;
+    TileCoord passable_tiles[MAX_PASSABLE_TILES];
 
     int width;  // 실제 사용 중인 맵 가로 길이
     int height; // 실제 사용 중인 맵 세로 길이

@@ -39,7 +39,6 @@ static int command_exists_in_path(const char *cmd)
         return 0;
     }
 
-    const size_t cmd_len = strlen(cmd);
     const char *segment = path_env;
     while (*segment)
     {

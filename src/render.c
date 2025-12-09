@@ -65,19 +65,26 @@ typedef struct
     int viewport_offset_y;
 } Camera;
 
-static const PlayerTextureSet PLAYER_TEXTURE_PATHS[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT] = {
-    [PLAYER_VARIANT_NORMAL] = {
-        [PLAYER_FACING_DOWN] = {
-            "assets/image/player/foward_stand.png",
-            "assets/image/player/foward_stand.png",
-            "assets/image/player/foward_left.PNG",
-            "assets/image/player/foward_right.png"},
-        [PLAYER_FACING_UP] = {"assets/image/player/back_stand_1.PNG", "assets/image/player/back_stand_2.png", "assets/image/player/back_left.PNG", "assets/image/player/back_right.PNG"},
-        [PLAYER_FACING_LEFT] = {"assets/image/player/left_stand.PNG", "assets/image/player/left_stand.PNG", "assets/image/player/left_left.png", "assets/image/player/left_right.png"},
-        [PLAYER_FACING_RIGHT] = {"assets/image/player/right_stand.png", "assets/image/player/right_stand.png", "assets/image/player/right_left.PNG", "assets/image/player/right_right.PNG"}},
-    [PLAYER_VARIANT_BACKPACK] = {[PLAYER_FACING_DOWN] = {"assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_left.png", "assets/image/player_backpack/foward_right.png"}, [PLAYER_FACING_UP] = {"assets/image/player_backpack/back_stand_1.png", "assets/image/player_backpack/back_stand_2.png", "assets/image/player_backpack/back_left.png", "assets/image/player_backpack/back_right.png"}, [PLAYER_FACING_LEFT] = {"assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_left.png", "assets/image/player_backpack/left_right.png"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_left.png", "assets/image/player_backpack/right_right.png"}},
-    [PLAYER_VARIANT_SCOOTER] = {[PLAYER_FACING_DOWN] = {"assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG"}, [PLAYER_FACING_UP] = {"assets/image/player_scooter/back_stand_1.PNG", "assets/image/player_scooter/back_stand_2.png", "assets/image/player_scooter/back_stand_1.PNG", "assets/image/player_scooter/back_stand_2.png"}, [PLAYER_FACING_LEFT] = {"assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png"}},
-    [PLAYER_VARIANT_SCOOTER_BACKPACK] = {[PLAYER_FACING_DOWN] = {"assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG"}, [PLAYER_FACING_UP] = {"assets/image/player_scooter_backpack/back_stand_1.png", "assets/image/player_scooter_backpack/back_stand_2.PNG", "assets/image/player_scooter_backpack/back_stand_1.png", "assets/image/player_scooter_backpack/back_stand_2.PNG"}, [PLAYER_FACING_LEFT] = {"assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png"}}};
+static const char *stage_label_for_id(int stage_id)
+{
+    switch (stage_id)
+    {
+    case 1:
+        return "B1";
+    case 2:
+        return "1F";
+    case 3:
+        return "2F";
+    case 4:
+        return "3F";
+    case 5:
+        return "4F";
+    case 6:
+        return "5F";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 static SDL_Window *g_window = NULL;
 static SDL_Renderer *g_renderer = NULL;
@@ -118,6 +125,113 @@ static SDL_Texture *g_player_textures[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT]
 static int g_window_w = 0;
 static int g_window_h = 0;
 static int g_tile_render_size = TILE_SIZE;
+
+#define HUD_FONT_WIDTH 5
+#define HUD_FONT_HEIGHT 7
+#define HUD_FONT_SCALE 2
+#define HUD_CHAR_SPACING 1
+#define HUD_LINE_SPACING (HUD_FONT_HEIGHT * HUD_FONT_SCALE + 8)
+#define HUD_MARGIN 12
+
+typedef struct
+{
+    char ch;
+    unsigned char rows[HUD_FONT_HEIGHT];
+} HudFontGlyph;
+
+// SDL_ttf를 추가 도입하지 않고도 간단한 HUD 문구를 표시하기 위해 5x7 비트맵 폰트를 직접 정의한다.
+static const HudFontGlyph kHudFontGlyphs[] = {
+    {'0', {0x1E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x1E}},
+    {'1', {0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E}},
+    {'2', {0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F}},
+    {'3', {0x0E, 0x11, 0x01, 0x06, 0x01, 0x11, 0x0E}},
+    {'4', {0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02}},
+    {'5', {0x1F, 0x10, 0x1E, 0x01, 0x01, 0x11, 0x0E}},
+    {'6', {0x06, 0x08, 0x10, 0x1E, 0x11, 0x11, 0x0E}},
+    {'7', {0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08}},
+    {'8', {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E}},
+    {'9', {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C}},
+    {':', {0x00, 0x04, 0x00, 0x00, 0x04, 0x00, 0x00}},
+    {'.', {0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x06}},
+    {'A', {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11}},
+    {'B', {0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E}},
+    {'C', {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E}},
+    {'E', {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F}},
+    {'F', {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x10}},
+    {'G', {0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E}},
+    {'I', {0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E}},
+    {'M', {0x11, 0x1B, 0x15, 0x15, 0x11, 0x11, 0x11}},
+    {'O', {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E}},
+    {'R', {0x1E, 0x11, 0x11, 0x1E, 0x12, 0x11, 0x11}},
+    {'S', {0x0F, 0x10, 0x10, 0x0E, 0x01, 0x01, 0x1E}},
+    {'T', {0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}},
+    {' ', {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
+};
+
+static const HudFontGlyph *find_hud_glyph(char c)
+{
+    const size_t count = sizeof(kHudFontGlyphs) / sizeof(kHudFontGlyphs[0]);
+    for (size_t i = 0; i < count; ++i)
+    {
+        if (kHudFontGlyphs[i].ch == c)
+        {
+            return &kHudFontGlyphs[i];
+        }
+    }
+    return &kHudFontGlyphs[count - 1]; // 공백 기본값
+}
+
+static void draw_hud_glyph(char c, int x, int y)
+{
+    const HudFontGlyph *glyph = find_hud_glyph(c);
+    for (int row = 0; row < HUD_FONT_HEIGHT; ++row)
+    {
+        unsigned char mask = glyph->rows[row];
+        for (int col = 0; col < HUD_FONT_WIDTH; ++col)
+        {
+            int bit = HUD_FONT_WIDTH - 1 - col;
+            if (mask & (1 << bit))
+            {
+                SDL_Rect pixel = {
+                    x + col * HUD_FONT_SCALE,
+                    y + row * HUD_FONT_SCALE,
+                    HUD_FONT_SCALE,
+                    HUD_FONT_SCALE};
+                SDL_RenderFillRect(g_renderer, &pixel);
+            }
+        }
+    }
+}
+
+static void draw_hud_text(const char *text, int x, int y)
+{
+    int pen_x = x;
+    for (const char *p = text; *p; ++p)
+    {
+        if (*p == '\n')
+        {
+            y += HUD_LINE_SPACING;
+            pen_x = x;
+            continue;
+        }
+        draw_hud_glyph(*p, pen_x, y);
+        pen_x += HUD_FONT_WIDTH * HUD_FONT_SCALE + HUD_CHAR_SPACING;
+    }
+}
+
+static const PlayerTextureSet PLAYER_TEXTURE_PATHS[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT] = {
+    [PLAYER_VARIANT_NORMAL] = {
+        [PLAYER_FACING_DOWN] = {
+            "assets/image/player/foward_stand.png",
+            "assets/image/player/foward_stand.png",
+            "assets/image/player/foward_left.PNG",
+            "assets/image/player/foward_right.png"},
+        [PLAYER_FACING_UP] = {"assets/image/player/back_stand_1.PNG", "assets/image/player/back_stand_2.png", "assets/image/player/back_left.PNG", "assets/image/player/back_right.PNG"},
+        [PLAYER_FACING_LEFT] = {"assets/image/player/left_stand.PNG", "assets/image/player/left_stand.PNG", "assets/image/player/left_left.png", "assets/image/player/left_right.png"},
+        [PLAYER_FACING_RIGHT] = {"assets/image/player/right_stand.png", "assets/image/player/right_stand.png", "assets/image/player/right_left.PNG", "assets/image/player/right_right.PNG"}},
+    [PLAYER_VARIANT_BACKPACK] = {[PLAYER_FACING_DOWN] = {"assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_stand.png", "assets/image/player_backpack/foward_left.png", "assets/image/player_backpack/foward_right.png"}, [PLAYER_FACING_UP] = {"assets/image/player_backpack/back_stand_1.png", "assets/image/player_backpack/back_stand_2.png", "assets/image/player_backpack/back_left.png", "assets/image/player_backpack/back_right.png"}, [PLAYER_FACING_LEFT] = {"assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_stand.PNG", "assets/image/player_backpack/left_left.png", "assets/image/player_backpack/left_right.png"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_stand.png", "assets/image/player_backpack/right_left.png", "assets/image/player_backpack/right_right.png"}},
+    [PLAYER_VARIANT_SCOOTER] = {[PLAYER_FACING_DOWN] = {"assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG", "assets/image/player_scooter/forward_stand.PNG"}, [PLAYER_FACING_UP] = {"assets/image/player_scooter/back_stand_1.PNG", "assets/image/player_scooter/back_stand_2.png", "assets/image/player_scooter/back_stand_1.PNG", "assets/image/player_scooter/back_stand_2.png"}, [PLAYER_FACING_LEFT] = {"assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG", "assets/image/player_scooter/left_stand.PNG"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png", "assets/image/player_scooter/right_stand.png"}},
+    [PLAYER_VARIANT_SCOOTER_BACKPACK] = {[PLAYER_FACING_DOWN] = {"assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG", "assets/image/player_scooter_backpack/front_stand.PNG"}, [PLAYER_FACING_UP] = {"assets/image/player_scooter_backpack/back_stand_1.png", "assets/image/player_scooter_backpack/back_stand_2.PNG", "assets/image/player_scooter_backpack/back_stand_1.png", "assets/image/player_scooter_backpack/back_stand_2.PNG"}, [PLAYER_FACING_LEFT] = {"assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG", "assets/image/player_scooter_backpack/left_stand.PNG"}, [PLAYER_FACING_RIGHT] = {"assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png", "assets/image/player_scooter_backpack/right_stand.png"}}};
 
 static void update_tile_render_metrics(void)
 {
@@ -669,6 +783,98 @@ static void render_professor_clones(const Stage *stage,
     }
 }
 
+// 상단 HUD는 플레이 진행 정보(시간/남은 탄/스쿠터 타이머)를 카메라와 무관하게 고정 좌표에 그린다.
+// 상단 HUD는 플레이 진행 정보(스테이지/시간/남은 탄/스쿠터 타이머)를 고정 좌표에 출력한다.
+static void render_hud(const Stage *stage, const Player *player, double elapsed_time)
+{
+    if (!g_renderer || !stage || !player)
+    {
+        return;
+    }
+
+    SDL_SetRenderDrawColor(g_renderer, 245, 245, 245, 255);
+
+    int line_y = HUD_MARGIN;
+
+    char stage_text[32];
+    const char *stage_label = stage_label_for_id(stage->id);
+    snprintf(stage_text, sizeof(stage_text), "STAGE %s", stage_label);
+    draw_hud_text(stage_text, HUD_MARGIN, line_y);
+
+    line_y += HUD_LINE_SPACING;
+
+    char time_text[32];
+    int minutes = (int)(elapsed_time / 60.0);
+    int seconds = (int)fmod(elapsed_time, 60.0);
+    if (seconds < 0)
+        seconds = 0;
+    snprintf(time_text, sizeof(time_text), "TIME %02d:%02d", minutes, seconds);
+
+    draw_hud_text(time_text, HUD_MARGIN, line_y);
+
+    line_y += HUD_LINE_SPACING;
+
+    const int ammo_icon_size = 16;
+    const int ammo_spacing = 4;
+    int ammo_line_height = ammo_icon_size;
+    if (g_tex_projectile && stage->remaining_ammo > 0)
+    {
+        SDL_Rect ammo_dst = {HUD_MARGIN, line_y, ammo_icon_size, ammo_icon_size};
+        for (int i = 0; i < stage->remaining_ammo; ++i)
+        {
+            ammo_dst.x = HUD_MARGIN + i * (ammo_icon_size + ammo_spacing);
+            SDL_RenderCopy(g_renderer, g_tex_projectile, NULL, &ammo_dst);
+        }
+    }
+    else if (g_tex_projectile)
+    {
+        SDL_Rect ammo_dst = {HUD_MARGIN, line_y, ammo_icon_size, ammo_icon_size};
+        SDL_SetTextureColorMod(g_tex_projectile, 255, 80, 80);
+        SDL_RenderCopy(g_renderer, g_tex_projectile, NULL, &ammo_dst);
+        SDL_SetTextureColorMod(g_tex_projectile, 255, 255, 255);
+    }
+    else
+    {
+        char ammo_text[32];
+        snprintf(ammo_text, sizeof(ammo_text), "BALLS %d", stage->remaining_ammo);
+        draw_hud_text(ammo_text, HUD_MARGIN, line_y);
+        ammo_line_height = HUD_FONT_HEIGHT * HUD_FONT_SCALE;
+    }
+
+    line_y += ammo_line_height + 8;
+
+    SDL_Texture *scooter_icon = g_tex_item_scooter ? g_tex_item_scooter : g_tex_projectile;
+    SDL_Rect scooter_rect = {HUD_MARGIN, line_y, 18, 18};
+    if (scooter_icon)
+    {
+        SDL_RenderCopy(g_renderer, scooter_icon, NULL, &scooter_rect);
+    }
+    else
+    {
+        SDL_RenderFillRect(g_renderer, &scooter_rect);
+    }
+
+    double scooter_remaining = player->has_scooter ? (player->scooter_expire_time - elapsed_time) : 0.0;
+    if (scooter_remaining < 0.0)
+    {
+        scooter_remaining = 0.0;
+    }
+
+    int scooter_total_seconds = (int)(scooter_remaining + 0.5);
+    if (!player->has_scooter)
+    {
+        scooter_total_seconds = 0;
+    }
+    int scooter_minutes = scooter_total_seconds / 60;
+    int scooter_seconds = scooter_total_seconds % 60;
+
+    char scooter_text[32];
+    snprintf(scooter_text, sizeof(scooter_text), ": %02d:%02d", scooter_minutes, scooter_seconds);
+    draw_hud_text(scooter_text, scooter_rect.x + scooter_rect.w + 8, line_y);
+
+    SDL_SetRenderDrawColor(g_renderer, 15, 15, 15, 255);
+}
+
 static void draw_texture(SDL_Texture *texture, int x, int y, const Camera *camera)
 {
     if (!texture)
@@ -999,6 +1205,8 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
         }
     }
     SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_NONE);
+
+    render_hud(stage, player, elapsed_time);
 
     // 패턴 확인용 주석처리
     SDL_RenderPresent(g_renderer);

@@ -848,7 +848,7 @@ int pattern_stage_4f(Stage *stage, Obstacle *prof, Player *player, double delta_
     const double CYCLE = 4.0;
     // "한번 확 느려지는 구간" 길이
     const double HIT_DURATION = 0.2; // 0.2초 동안 최저 속도 유지
-    const double MIN_FACTOR = 0.25;  // 최저 속도: 원래의 25%
+    const double MIN_FACTOR = 0.4;  // 최저 속도: 원래의 40%
 
     double t = fmod(prof->p_timer, CYCLE);
 

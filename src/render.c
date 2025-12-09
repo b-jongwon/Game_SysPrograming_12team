@@ -7,9 +7,12 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "../include/game.h"
 #include "../include/render.h"
@@ -169,6 +172,32 @@ static const HudFontGlyph kHudFontGlyphs[] = {
     {' ', {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}
 };
 
+#define PROFESSOR_TEXTURE_COUNT 6
+#define PROFESSOR_LABEL_TEXT_MAX 32
+#define PROFESSOR_LABEL_PADDING_X 8
+#define PROFESSOR_LABEL_PADDING_Y 4
+#define PROFESSOR_LABEL_ABOVE_OFFSET 8
+#define PROFESSOR_LABEL_FONT_SIZE 22
+
+static const char *kProfessorLabelFontCandidates[] = {
+    "assets/font/ProfessorLabel.ttf",
+    "assets/font/ProfessorLabel.otf",
+    "assets/font/D2Coding-Ver1.3.2-20180524-all.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansKR-Regular.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumGothicCoding.ttf",
+    "/usr/share/fonts/truetype/ubuntu/UbuntuSans[wght].ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+};
+
+static char g_professor_label_texts[PROFESSOR_TEXTURE_COUNT][PROFESSOR_LABEL_TEXT_MAX];
+static SDL_Texture *g_professor_label_textures[PROFESSOR_TEXTURE_COUNT] = {NULL};
+static int g_professor_label_width[PROFESSOR_TEXTURE_COUNT] = {0};
+static int g_professor_label_height[PROFESSOR_TEXTURE_COUNT] = {0};
+static TTF_Font *g_professor_label_font = NULL;
+static int g_ttf_initialized = 0;
+
 static const HudFontGlyph *find_hud_glyph(char c)
 {
     const size_t count = sizeof(kHudFontGlyphs) / sizeof(kHudFontGlyphs[0]);
@@ -218,6 +247,178 @@ static void draw_hud_text(const char *text, int x, int y)
         draw_hud_glyph(*p, pen_x, y);
         pen_x += HUD_FONT_WIDTH * HUD_FONT_SCALE + HUD_CHAR_SPACING;
     }
+}
+
+static int is_file_readable(const char *path)
+{
+    return (path && access(path, R_OK) == 0);
+}
+
+static TTF_Font *open_professor_label_font(void)
+{
+    const char *override_path = getenv("PROFESSOR_LABEL_FONT");
+    if (is_file_readable(override_path))
+    {
+        TTF_Font *font = TTF_OpenFont(override_path, PROFESSOR_LABEL_FONT_SIZE);
+        if (font)
+        {
+            printf("Professor label font: %s\n", override_path);
+            return font;
+        }
+        fprintf(stderr, "TTF_OpenFont failed for %s: %s\n", override_path, TTF_GetError());
+    }
+
+    const size_t candidate_count = sizeof(kProfessorLabelFontCandidates) / sizeof(kProfessorLabelFontCandidates[0]);
+    for (size_t i = 0; i < candidate_count; ++i)
+    {
+        const char *candidate = kProfessorLabelFontCandidates[i];
+        if (!is_file_readable(candidate))
+        {
+            continue;
+        }
+        TTF_Font *font = TTF_OpenFont(candidate, PROFESSOR_LABEL_FONT_SIZE);
+        if (font)
+        {
+            printf("Professor label font: %s\n", candidate);
+            return font;
+        }
+        fprintf(stderr, "TTF_OpenFont failed for %s: %s\n", candidate, TTF_GetError());
+    }
+
+    fprintf(stderr, "Unable to find readable font for professor labels. Set PROFESSOR_LABEL_FONT to a Hangul-capable TTF.\n");
+    return NULL;
+}
+
+static void destroy_professor_label_texture(int index)
+{
+    if (index < 0 || index >= PROFESSOR_TEXTURE_COUNT)
+    {
+        return;
+    }
+    if (g_professor_label_textures[index])
+    {
+        SDL_DestroyTexture(g_professor_label_textures[index]);
+        g_professor_label_textures[index] = NULL;
+    }
+    g_professor_label_width[index] = 0;
+    g_professor_label_height[index] = 0;
+}
+
+static void rebuild_professor_label_texture(int index)
+{
+    if (index < 0 || index >= PROFESSOR_TEXTURE_COUNT)
+    {
+        return;
+    }
+
+    destroy_professor_label_texture(index);
+
+    if (!g_professor_label_font || !g_renderer)
+    {
+        return;
+    }
+    if (g_professor_label_texts[index][0] == '\0')
+    {
+        return;
+    }
+
+    SDL_Color color = {245, 245, 245, 255};
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(g_professor_label_font,
+                                                  g_professor_label_texts[index],
+                                                  color);
+    if (!surface)
+    {
+        fprintf(stderr, "TTF_RenderUTF8_Blended failed for label %d: %s\n", index, TTF_GetError());
+        return;
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(g_renderer, surface);
+    if (!texture)
+    {
+        fprintf(stderr, "SDL_CreateTextureFromSurface failed for label %d: %s\n", index, SDL_GetError());
+        SDL_FreeSurface(surface);
+        return;
+    }
+
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    g_professor_label_width[index] = surface->w;
+    g_professor_label_height[index] = surface->h;
+    SDL_FreeSurface(surface);
+    g_professor_label_textures[index] = texture;
+}
+
+static void rebuild_all_professor_label_textures(void)
+{
+    for (int i = 0; i < PROFESSOR_TEXTURE_COUNT; ++i)
+    {
+        rebuild_professor_label_texture(i);
+    }
+}
+
+static void destroy_all_professor_label_textures(void)
+{
+    for (int i = 0; i < PROFESSOR_TEXTURE_COUNT; ++i)
+    {
+        destroy_professor_label_texture(i);
+    }
+}
+
+static void extract_professor_label_from_path(const char *path, char *out, size_t out_size)
+{
+    if (!out || out_size == 0)
+    {
+        return;
+    }
+
+    out[0] = '\0';
+    if (!path)
+    {
+        return;
+    }
+
+    const char *filename = strrchr(path, '/');
+    filename = filename ? filename + 1 : path;
+
+    size_t len = strcspn(filename, ".");
+    if (len >= out_size)
+    {
+        len = out_size - 1;
+    }
+
+    memcpy(out, filename, len);
+    out[len] = '\0';
+}
+
+static void cache_professor_label_text(int index, const char *texture_path)
+{
+    if (index < 0 || index >= PROFESSOR_TEXTURE_COUNT)
+    {
+        return;
+    }
+
+    extract_professor_label_from_path(texture_path,
+                                      g_professor_label_texts[index],
+                                      sizeof(g_professor_label_texts[index]));
+
+    if (g_professor_label_font && g_renderer)
+    {
+        rebuild_professor_label_texture(index);
+    }
+}
+
+static int get_professor_label_index_for_stage(int stage_identifier)
+{
+    int idx = stage_identifier - 1;
+    if (idx < 0 || idx >= PROFESSOR_TEXTURE_COUNT)
+    {
+        return -1;
+    }
+
+    if (g_professor_label_texts[idx][0] == '\0')
+    {
+        return -1;
+    }
+    return idx;
 }
 
 static const PlayerTextureSet PLAYER_TEXTURE_PATHS[PLAYER_VARIANT_COUNT][PLAYER_FACING_COUNT] = {
@@ -442,6 +643,52 @@ static int is_rect_visible(const SDL_Rect *rect)
     return !(rect->x + rect->w <= 0 || rect->y + rect->h <= 0 || rect->x >= WINDOW_WIDTH || rect->y >= WINDOW_HEIGHT);
 }
 
+// 교수 장애물의 머리 위에 반투명 배지를 띄워 이름을 표시한다.
+static void draw_professor_nameplate(int label_index, double world_x, double world_y, const Camera *camera)
+{
+    if (!g_renderer || !camera)
+    {
+        return;
+    }
+    if (label_index < 0 || label_index >= PROFESSOR_TEXTURE_COUNT)
+    {
+        return;
+    }
+
+    SDL_Texture *label_tex = g_professor_label_textures[label_index];
+    int text_w = g_professor_label_width[label_index];
+    int text_h = g_professor_label_height[label_index];
+    if (!label_tex || text_w <= 0 || text_h <= 0)
+    {
+        return;
+    }
+
+    const int tile_size = camera->tile_size;
+    const int screen_x = camera->viewport_offset_x + (int)lround(world_x * tile_size - camera->pixel_x);
+    const int screen_y = camera->viewport_offset_y + (int)lround(world_y * tile_size - camera->pixel_y);
+
+    const int label_x = screen_x + (tile_size - text_w) / 2;
+    const int label_y = screen_y - text_h - PROFESSOR_LABEL_ABOVE_OFFSET;
+
+    SDL_Rect background = {label_x - PROFESSOR_LABEL_PADDING_X,
+                           label_y - PROFESSOR_LABEL_PADDING_Y,
+                           text_w + PROFESSOR_LABEL_PADDING_X * 2,
+                           text_h + PROFESSOR_LABEL_PADDING_Y * 2};
+
+    if (!is_rect_visible(&background))
+    {
+        return;
+    }
+
+    SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(g_renderer, 10, 10, 10, 180);
+    SDL_RenderFillRect(g_renderer, &background);
+
+    SDL_Rect dst = {label_x, label_y, text_w, text_h};
+    SDL_RenderCopy(g_renderer, label_tex, NULL, &dst);
+    SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_NONE);
+}
+
 static void draw_texture_with_pixel_offset(SDL_Texture *texture, int x, int y, int offset_x, int offset_y, const Camera *camera)
 {
     if (!texture)
@@ -524,6 +771,15 @@ int init_renderer(void)
         return -1;
     }
 
+    if (TTF_Init() != 0)
+    {
+        fprintf(stderr, "TTF_Init failed: %s\n", TTF_GetError());
+        IMG_Quit();
+        SDL_Quit();
+        return -1;
+    }
+    g_ttf_initialized = 1;
+
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     const int initial_w = WINDOW_WIDTH;
@@ -558,6 +814,13 @@ int init_renderer(void)
 
     SDL_RenderSetLogicalSize(g_renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+    g_professor_label_font = open_professor_label_font();
+    if (!g_professor_label_font)
+    {
+        shutdown_renderer();
+        return -1;
+    }
+
     update_tile_render_metrics();
 
     g_tex_floor = load_texture("assets/image/floor64.png");
@@ -566,11 +829,17 @@ int init_renderer(void)
     g_tex_exit = load_texture("assets/image/exit.PNG");
 
     g_tex_professor_1 = load_texture("assets/image/김명석교수님.png");
+    cache_professor_label_text(0, "assets/image/김명석교수님.png");
     g_tex_professor_2 = load_texture("assets/image/이종택교수님.png");
+    cache_professor_label_text(1, "assets/image/이종택교수님.png");
     g_tex_professor_3 = load_texture("assets/image/김진욱교수님.png");
+    cache_professor_label_text(2, "assets/image/김진욱교수님.png");
     g_tex_professor_4 = load_texture("assets/image/김명옥교수님.png");
+    cache_professor_label_text(3, "assets/image/김명옥교수님.png");
     g_tex_professor_5 = load_texture("assets/image/김정근교수님.png");
+    cache_professor_label_text(4, "assets/image/김정근교수님.png");
     g_tex_professor_6 = load_texture("assets/image/한명균교수님.png");
+    cache_professor_label_text(5, "assets/image/한명균교수님.png");
 
     g_tex_obstacle = load_texture("assets/image/professor64.png"); // X (일반)
     g_tex_spinner = load_texture("assets/image/professor64.png");  // R (스피너)
@@ -629,6 +898,13 @@ int init_renderer(void)
 
 void shutdown_renderer(void)
 {
+    destroy_all_professor_label_textures();
+    if (g_professor_label_font)
+    {
+        TTF_CloseFont(g_professor_label_font);
+        g_professor_label_font = NULL;
+    }
+
     destroy_texture(&g_tex_floor);
     destroy_texture(&g_tex_wall);
     destroy_texture(&g_tex_goal);
@@ -684,6 +960,11 @@ void shutdown_renderer(void)
     }
 
     IMG_Quit();
+    if (g_ttf_initialized)
+    {
+        TTF_Quit();
+        g_ttf_initialized = 0;
+    }
     SDL_Quit();
 }
 
@@ -997,6 +1278,7 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
 
     SDL_Texture *current_prof_tex = g_tex_professor_1; // 기본값
     int stage_identifier = stage->id > 0 ? stage->id : current_stage;
+    int current_prof_label_index = get_professor_label_index_for_stage(stage_identifier);
 
     switch (stage_identifier)
     {
@@ -1060,6 +1342,10 @@ void render(const Stage *stage, const Player *player, double elapsed_time,
             if (!visibility[tile_y][tile_x])
                 continue;
             draw_texture_at_world(tex_to_draw, obstacle_world_x, obstacle_world_y, &camera);
+            if (o->kind == OBSTACLE_KIND_PROFESSOR && current_prof_label_index >= 0)
+            {
+                draw_professor_nameplate(current_prof_label_index, obstacle_world_x, obstacle_world_y, &camera);
+            }
         }
     }
 

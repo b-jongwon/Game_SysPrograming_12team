@@ -1,5 +1,3 @@
-// game.h
-
 #ifndef GAME_H // game.h 중복 include 방지용 include guard 시작
 #define GAME_H
 

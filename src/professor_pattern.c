@@ -841,12 +841,11 @@ int pattern_stage_4f(Stage *stage, Obstacle *prof, Player *player, double delta_
     if (delta_time < 0.0)
         delta_time = 0.0;
 
-    // ====== 타이머 누적 (교수 1마리별로 따로 돌아가는 타이머) ======
     prof->p_timer += delta_time;
 
-    // 한 사이클 길이 (초) – 네가 말한 4초
+    // 한 사이클 길이
     const double CYCLE = 4.0;
-    // "한번 확 느려지는 구간" 길이
+    // 한번 확 느려지는 구간
     const double HIT_DURATION = 0.2; // 0.2초 동안 최저 속도 유지
     const double MIN_FACTOR = 0.4;  // 최저 속도: 원래의 40%
 
@@ -857,25 +856,24 @@ int pattern_stage_4f(Stage *stage, Obstacle *prof, Player *player, double delta_
     double factor;
     if (t < HIT_DURATION)
     {
-        // 1) 처음 HIT_DURATION 동안은 **확 느려진 상태** 유지
         factor = MIN_FACTOR;
     }
     else
     {
-        // 2) 그 이후 ~ 4초까지는 선형으로 서서히 회복
-        double recover_time = CYCLE - HIT_DURATION;   // 4.0 - 0.2 = 3.8
-        double u = (t - HIT_DURATION) / recover_time; // 0 ~ 1
+        // 0,2 ~ 4초까지는 선형으로 서서히 회복
+        double recover_time = CYCLE - HIT_DURATION;  
+        double u = (t - HIT_DURATION) / recover_time; 
         if (u < 0.0)
             u = 0.0;
         if (u > 1.0)
             u = 1.0;
 
-        factor = MIN_FACTOR + (1.0 - MIN_FACTOR) * u; // MIN_FACTOR → 1.0 으로 서서히 증가
+        factor = MIN_FACTOR + (1.0 - MIN_FACTOR) * u; 
     }
 
     player->move_speed = base_speed * factor; // 최종 적용 속도: (난이도/스쿠터 등 기본 속도) * (교수 디버프 계수)
 
-    return 1; // 이동은 그대로 진행
+    return 1; 
 }
 
 int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_time)
@@ -890,14 +888,13 @@ int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_
 
     const double NERFED_SLOW_FACTOR = 0.50; // 50퍼센트 느려짐
 
-    // 3. 시야 차단 강도 (Stage 2 능력)
     // 1: 항상 어둠, 0: 특정 패턴(분신) 때만 어둠
     const int ALWAYS_DARK = 0;
 
     // 4. 패턴 주기 (초)
     const double PATTERN_LOOP_TIME = 8.0;
 
-    // 1. 발각 사운드 및 초기화 (최초 1회)
+    // 1. 발각 사운드 및 초기화 
     const char *PROF_LV6_SFX_PATH = "bgm/Professor_lv6.wav";
     if (prof->alert && prof->p_misc == 0)
     {
@@ -928,7 +925,7 @@ int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_
 
         // 4초마다 3초간 느려짐
         if (t < 2)
-            factor = NERFED_SLOW_FACTOR; // 설정한 변수 적용
+            factor = NERFED_SLOW_FACTOR; 
         else
         {
             // 빠르게 회복
@@ -940,9 +937,8 @@ int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_
         player->move_speed = base_speed * factor;
     }
 
-    // 패턴 스케줄링 (Stage 1, 2, 3, 4 종합)
     double loop_time = fmod(prof->p_timer, PATTERN_LOOP_TIME);
-    int should_move = 1; // 기본적으로는 움직임 (1)
+    int should_move = 1; 
 
     // Phase 1: 탄막 발사
     if (loop_time < 4.0)
@@ -973,7 +969,7 @@ int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_
     }
    else 
     {
-        // 1. 시야 차단 해제 (이 코드가 있어야 화면이 밝아집니다)
+        // 1. 시야 차단 해제 
         player->is_confused = ALWAYS_DARK; 
 
          // 순간이동 기능은 주석처리
@@ -994,7 +990,7 @@ int pattern_stage_5f(Stage *stage, Obstacle *prof, Player *player, double delta_
 
     decay_professor_clones(stage, delta_time);
 
-    return should_move; // 👈 0을 반환하면 update_professor에서 이동 안 함
+    return should_move; 
 }
 
 static const PatternFunc kPatterns[] = {

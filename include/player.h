@@ -1,39 +1,23 @@
-// player.h
-// ----------------------------------------------------
-// 플레이어 캐릭터를 초기화하고, 입력에 따라 움직이게 하는 인터페이스.
-// - init_player: 스테이지의 시작 위치로 플레이어를 세팅.
-// - move_player: 입력 문자(w, a, s, d 등)에 따라 플레이어 위치를 갱신하고,
-//                벽/장애물/골 지점과의 상호작용을 처리.
-
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "../include/game.h"   // Player, Stage 구조체 정의 사용
-#include "../include/stage.h"  // stage 관련 로드 함수와 Stage 타입 사용 (중복 include 보호는 stage.h 쪽에서 처리)
+#include "../include/game.h"   
+#include "../include/stage.h"  
 
-// 플레이어를 특정 스테이지의 시작 위치로 초기화하는 함수.
-// - 인자 p: 초기화할 Player 구조체 포인터.
-// - 인자 stage: 현재 플레이할 Stage. stage->start_x, start_y를 참고하여 p->world_x/world_y를 설정.
-// - 또한 p->alive = 1로 설정하여 플레이어를 "살아있는 상태"로 만듦.
+
 void init_player(Player *p, const Stage *stage);
 
-// 현재 시간을 함께 받아 플레이어를 이동.
 void move_player(Player *p, char input, const Stage *stage, double current_time);
 
-// 입력이 없을 때 호출해 일정 시간 이후 스탠드 자세로 전환.
 void update_player_idle(Player *p, double current_time);
 
-// 프레임 간 경과 시간을 이용해 선형 이동을 갱신.
 int update_player_motion(Player *p, double delta_time);
 
-// 서브픽셀 좌표(world_x/world_y) 기반으로 플레이어 박스를 침범했는지 판정.
 int is_world_point_inside_player(const Player *player, int world_x, int world_y);
 
-// 타일 좌표의 중심이 플레이어 박스를 침범했는지 판정.
 int is_tile_center_inside_player(const Player *player, int tile_x, int tile_y);
 
-// 이동 거리당 애니메이션을 얼마나 빠르게 전환할지 제어하는 변수.
-// 기본값은 player.c에서 정의하며, 필요 시 게임 초기화 시점에서 값을 조정할 수 있다.
+
 extern int g_player_anim_stride_pixels;
 
 #endif // PLAYER_H

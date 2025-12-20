@@ -16,4 +16,4 @@ int is_world_position_blocked(const Stage *stage, int world_x, int world_y, Coll
 
 int is_active_breakable_wall_at(const Stage *stage, int tx, int ty);
 
-#endif // COLLISION_H
+#endif 

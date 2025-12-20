@@ -1,6 +1,3 @@
-// include/professor_patterns.h
-// --------------------------------------------------------
-
 #ifndef PROFESSOR_PATTERNS_H
 #define PROFESSOR_PATTERNS_H
 

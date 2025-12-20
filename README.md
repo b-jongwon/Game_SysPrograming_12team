@@ -4,9 +4,9 @@ SDL2 기반 스테이지형 잠입 게임입니다. 터미널에 문자를 뿌�
 
 ## 구조
 
-- `src/` : C 소스 코드
-- `include/` : 헤더 파일
-- `assets/` : 맵 파일 및 기록 파일
+- `src/` : 게임의 핵심 로직이 담긴 C 소스 코드
+- `include/` : 헤더 파일 모음
+- `assets/` : 맵 파일(.map), 이미지 리소스(.png), 사운드 파일(.wav) 및 기록 파일
 
 ## 의존성
 
@@ -15,10 +15,14 @@ SDL2 기반 스테이지형 잠입 게임입니다. 터미널에 문자를 뿌�
 - alsa-utils (`aplay` 기반 WAV 출력)
 - espeak (교수님 발각 TTS 파이프라인)
 
+
+### 필수 패키지 설치
+
 Ubuntu/Debian 계열이라면 다음 명령으로 설치할 수 있습니다.
 
 ```bash
-sudo apt install libsdl2-dev libsdl2-image-dev alsa-utils espeak
+sudo apt-get update
+sudo apt-get install build-essential libsdl2-dev libsdl2-image-dev alsa-utils
 ```
 
 WSL/VM처럼 ALSA 기본 장치가 없는 환경에서는 `aplay`가 실패할 수 있으니 PulseAudio를 추가 설치하고 Windows(또는 호스트)에서 PulseAudio 서버를 실행해 주세요.
@@ -26,6 +30,11 @@ WSL/VM처럼 ALSA 기본 장치가 없는 환경에서는 `aplay`가 실패할 �
 ```bash
 sudo apt install pulseaudio
 ```
+
+## TTS bash (TTS 소리 출력, install 필요함)
+sudo apt-get install espeak
+sudo apt install libsdl2-ttf-dev
+
 
 ## 빌드 & 실행
 
@@ -36,14 +45,16 @@ make
 
 ## 조작법
 
-- `W`, `A`, `S`, `D` : 플레이어 이동
+- `W`, `A`, `S`, `D`, `또는 방향키` : 플레이어 이동
+- `K`, `spacebar` : 투사체 발사
 - `q` : 게임 종료
 - `Ctrl+C` : 시그널로 안전 종료
+
 
 ## 게임 목표
 
 1. `S`에서 출발해 `G`(가방)을 회수합니다.
-2. 가방을 든 상태로 다시 `S` 위치로 돌아가 탈출해야 스테이지가 클리어됩니다.
+2. 가방을 든 상태로 다시 `F` 위치로 돌아가 탈출해야 스테이지가 클리어됩니다.
 
 가방을 주우면 플레이어가 백팩을 멘 스프라이트로 변하고, 시작 지점에는 `exit.png`가 표시되어 탈출 위치를 안내합니다.
 
@@ -59,12 +70,14 @@ make
 - SDL 이벤트를 통한 논블로킹 입력 처리
 - `signal`로 SIGINT, SIGTERM 처리
 
-## 추가 플레이 방법
-- 키보드로 k 를 누르면 투사체 발사 가능 투사체의 갯수는 한정 돼있고 장애물을 3번 맞추면 장애물 파괴 (장애물 hp 와 투사체 갯수, 데미지는 코드에서 수정 가능합니다.)
-- 아이템을 획득하면 1회 방어 가능 아이템을 가진채로 장애물에 부딧치면 장애물 파괴 가능 
-  ( 부딧치면 장애물 파괴가 아니라 단순 쉴드가 사라지는걸로 구현하려고 했는데 자꾸 이상하게 버그가 일어나서 장애물 파괴 로직으로 구현했습니다.)
-  
-## 이미지 매핑
+## 스테이지별 플레이 방법
+- Stage1
+- Stage2
+- Stage3
+- Stage4
+- Stage5 : 김정근 교수님께서 Latency! 를 외치면 플레이어의 속도가 느려졌다가 4초간 서서히 회복합니다.
+- Stage6 : 유일하게 교수님을 처치할수 있는 스테이지 입니다. 가방을 찾아서 오른쪽 끝의 부서지는 벽을 넘어 보스 공간으로 가면 교수님을 만날 수 있고 여러 스테이지의 패턴이 종합해서 등장합니다. 교수님을 처치시 탈출 가능합니다.
+
 
 ## 이미지 매핑
 
@@ -73,11 +86,16 @@ make
 | `#`, `@` | 벽 | `assets/image/wall64.png`
 | 공백 | 바닥 | `assets/image/floor64.png`
 | `G` | 목표 지점 | `assets/image/backpack64.png`
-| 플레이어 | `P` 좌표 | `assets/image/player/` & `player_backpack/` 내 방향별 시트
-| 장애물 `X` | 교수님 | `assets/image/professor64.png`
+| `S` | 플레이어 시작위치 | `assets/image/player/`  & `player_backpack/`
+| `F` | 출구 위치 | `assets/image/exit.PNG`
+| `P` | 교수님 | `assets/image/김명석교수님.png` & `assets/image/이종택교수님.png` & `assets/image/김진욱교수님.png` & `assets/image/김명옥교수님.png` & `assets/image/김정근교수님.png` & `assets/image/한명균교수님.png`
+| `V` | 세로 유령 | `assets/image/professor64.png`
+| `H` | 가로 유령 | `assets/image/professor64.png`
+| `R` | 원 유령 | `assets/image/professor64.png`
+| `B` | 깨지는 벽 | `assets/image/wall64.png`
+| `I` | 쉴드 아이템 | `assets/image/shield64.png`
+| `E` | 스쿠터 아이템 | `assets/image/scooter64.png`
+| `A` | 투사체 보급 아이템 | `assets/image/supply.png`
 
 맵 파일을 수정하면 해당 문자의 위치에 자동으로 이미지가 렌더링됩니다.
 
-## TTS bash (TTS 소리 출력, install 필요함)
-sudo apt-get install espeak
-sudo apt install libsdl2-ttf-dev

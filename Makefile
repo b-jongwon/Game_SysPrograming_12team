@@ -1,17 +1,18 @@
 CC = gcc
 SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null)
 SDL_LDLIBS := $(shell sdl2-config --libs 2>/dev/null)
+SDL_PKGS := sdl2 SDL2_image SDL2_ttf
 
 ifeq ($(SDL_CFLAGS),)
 SDL_CFLAGS = -I/usr/include/SDL2 -D_REENTRANT
 endif
 
 ifeq ($(SDL_LDLIBS),)
-SDL_LDLIBS = -lSDL2
+SDL_LDLIBS = -lSDL2 -lSDL2_image -lSDL2_ttf
 endif
 
 CFLAGS = -Wall -I./include $(SDL_CFLAGS) -pthread
-LDFLAGS = $(SDL_LDLIBS) -lSDL2_image -lSDL2_ttf -pthread -lm
+LDFLAGS = $(SDL_LDLIBS) -pthread -lm
 
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
